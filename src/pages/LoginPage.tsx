@@ -11,7 +11,7 @@ export function LoginPage() {
         <p className="text-[#5a7a8a] mt-2 text-sm">共享行程，一起出發</p>
       </div>
       <button
-        onClick={signIn}
+        onClick={() => signIn()}
         className="w-full max-w-xs bg-[#0077b6] text-white rounded-[10px] py-3 px-6 font-semibold text-sm active:opacity-80 transition-opacity"
       >
         Google 帳號登入
