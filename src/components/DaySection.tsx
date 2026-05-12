@@ -134,7 +134,7 @@ export function DaySection({ day, tripId, members }: Props) {
         event={selectedEvent}
         dayId={day.id}
         tripId={tripId}
-        eventCount={events.length}
+        events={events}
         members={members}
         onClose={() => setSheetOpen(false)}
       />

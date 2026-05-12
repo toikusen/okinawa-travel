@@ -1,20 +1,20 @@
 import { useState, useEffect } from 'react'
 import type { TripEvent, ForkItem, TripMember } from '../types'
-import { createEvent, updateEvent, deleteEvent } from '../lib/db'
+import { createEvent, updateEvent, deleteEvent, reorderEvents } from '../lib/db'
 
 interface Props {
   open: boolean
   event: TripEvent | null
   dayId: string
   tripId: string
-  eventCount: number
+  events: TripEvent[]
   members?: TripMember[]
   onClose: () => void
 }
 
 const emptyFork = (): ForkItem => ({ person: '', title: '', location: '', notes: '' })
 
-export function EventSheet({ open, event, dayId, tripId, eventCount, members = [], onClose }: Props) {
+export function EventSheet({ open, event, dayId, tripId, events, members = [], onClose }: Props) {
   const isEdit = event !== null
   const [type, setType] = useState<'shared' | 'fork'>('shared')
   const [title, setTitle] = useState('')
@@ -45,7 +45,7 @@ export function EventSheet({ open, event, dayId, tripId, eventCount, members = [
       type,
       time_start: timeStart,
       time_end: timeEnd,
-      sort_order: isEdit ? event.sort_order : eventCount,
+      sort_order: isEdit ? event.sort_order : events.length,
     }
     const data: Omit<TripEvent, 'id'> = type === 'shared'
       ? { ...base, title, location, notes }
@@ -54,7 +54,16 @@ export function EventSheet({ open, event, dayId, tripId, eventCount, members = [
     if (isEdit) {
       await updateEvent(tripId, dayId, event.id, data)
     } else {
-      await createEvent(tripId, dayId, data)
+      const newId = await createEvent(tripId, dayId, data)
+      if (timeStart) {
+        const allEvents: TripEvent[] = [...events, { ...data, id: newId }]
+        const sorted = [...allEvents].sort((a, b) => {
+          const ta = a.time_start || '\xff'
+          const tb = b.time_start || '\xff'
+          return ta.localeCompare(tb)
+        })
+        await reorderEvents(tripId, dayId, sorted.map((e) => e.id))
+      }
     }
     setSaving(false)
     onClose()
