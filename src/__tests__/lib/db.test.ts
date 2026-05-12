@@ -30,20 +30,13 @@ beforeEach(() => {
 })
 
 describe('createTrip', () => {
-  it('inserts into trips, trip_members, and days; returns trip id', async () => {
+  it('inserts into trips, trip_members, and days; returns a UUID', async () => {
+    const tripsInsert = vi.fn().mockResolvedValue({ error: null })
     const dayInsert = vi.fn().mockResolvedValue({ error: null })
     const memberInsert = vi.fn().mockResolvedValue({ error: null })
 
     mockFrom.mockImplementation((table: string) => {
-      if (table === 'trips') {
-        return {
-          insert: vi.fn().mockReturnValue({
-            select: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({ data: { id: 'trip-id' }, error: null }),
-            }),
-          }),
-        }
-      }
+      if (table === 'trips') return { insert: tripsInsert }
       if (table === 'trip_members') return { insert: memberInsert }
       if (table === 'days') return { insert: dayInsert }
       return {}
@@ -51,8 +44,10 @@ describe('createTrip', () => {
 
     const id = await createTrip('沖繩 2025', 'sei@test.com', '2025-06-11', '2025-06-12')
 
-    expect(id).toBe('trip-id')
-    expect(memberInsert).toHaveBeenCalledWith({ trip_id: 'trip-id', user_email: 'sei@test.com' })
+    // Returns a client-generated UUID (not predictable, just verify format)
+    expect(id).toMatch(/^[0-9a-f-]{36}$/)
+    expect(tripsInsert).toHaveBeenCalledWith(expect.objectContaining({ name: '沖繩 2025' }))
+    expect(memberInsert).toHaveBeenCalledWith({ trip_id: id, user_email: 'sei@test.com' })
 
     const [daysArg] = dayInsert.mock.calls[0] as [Array<{ date: string }>]
     expect(daysArg.length).toBe(2)
