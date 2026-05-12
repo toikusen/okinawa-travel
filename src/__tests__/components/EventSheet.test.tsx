@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { EventSheet } from '../../components/EventSheet'
 import type { TripEvent } from '../../types'
 
-vi.mock('../../lib/firestore', () => ({
+vi.mock('../../lib/db', () => ({
   createEvent: vi.fn().mockResolvedValue('new-id'),
   updateEvent: vi.fn().mockResolvedValue(undefined),
   deleteEvent: vi.fn().mockResolvedValue(undefined),

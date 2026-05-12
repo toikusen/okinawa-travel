@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useTrip } from '../hooks/useTrip'
-import { updateTripName } from '../lib/firestore'
+import { updateTripName } from '../lib/db'
 
 const TRIP_ID_KEY = 'okinawa_trip_id'
 

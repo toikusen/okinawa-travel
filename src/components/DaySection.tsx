@@ -8,7 +8,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useEvents } from '../hooks/useEvents'
-import { reorderEvents, updateDayLabel } from '../lib/firestore'
+import { reorderEvents, updateDayLabel } from '../lib/db'
 import { EventCard } from './EventCard'
 import { ForkCard } from './ForkCard'
 import { EventSheet } from './EventSheet'

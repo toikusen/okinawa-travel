@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { TripEvent, ForkItem } from '../types'
-import { createEvent, updateEvent, deleteEvent } from '../lib/firestore'
+import { createEvent, updateEvent, deleteEvent } from '../lib/db'
 
 interface Props {
   open: boolean

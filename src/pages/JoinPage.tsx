@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { joinTrip } from '../lib/firestore'
+import { joinTrip } from '../lib/db'
 
 const TRIP_ID_KEY = 'okinawa_trip_id'
 
