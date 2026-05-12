@@ -1,9 +1,24 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import { LoginPage } from './pages/LoginPage'
 import { TimelinePage } from './pages/TimelinePage'
 import { JoinPage } from './pages/JoinPage'
 import { SettingsPage } from './pages/SettingsPage'
+
+const PENDING_JOIN_KEY = 'pendingJoinTripId'
+
+function PendingJoinRedirect() {
+  const navigate = useNavigate()
+  useEffect(() => {
+    const pendingTripId = sessionStorage.getItem(PENDING_JOIN_KEY)
+    if (pendingTripId) {
+      sessionStorage.removeItem(PENDING_JOIN_KEY)
+      navigate(`/join/${pendingTripId}`, { replace: true })
+    }
+  }, [navigate])
+  return null
+}
 
 export default function App() {
   const { user, loading } = useAuth()
@@ -26,11 +41,14 @@ export default function App() {
   }
 
   return (
-    <Routes>
-      <Route path="/" element={<TimelinePage />} />
-      <Route path="/join/:tripId" element={<JoinPage />} />
-      <Route path="/settings" element={<SettingsPage />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <>
+      <PendingJoinRedirect />
+      <Routes>
+        <Route path="/" element={<TimelinePage />} />
+        <Route path="/join/:tripId" element={<JoinPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   )
 }

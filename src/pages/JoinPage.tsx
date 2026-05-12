@@ -31,7 +31,10 @@ export function JoinPage() {
       <div className="min-h-screen bg-[#f0f4f8] flex flex-col items-center justify-center gap-6 px-6">
         <p className="text-sm text-[#1a2530]">請先登入以加入旅程</p>
         <button
-          onClick={() => signIn(window.location.href)}
+          onClick={() => {
+            if (tripId) sessionStorage.setItem('pendingJoinTripId', tripId)
+            signIn(window.location.origin)
+          }}
           className="bg-[#0077b6] text-white rounded-[10px] py-3 px-8 text-sm font-semibold"
         >
           Google 帳號登入
