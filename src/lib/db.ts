@@ -38,14 +38,16 @@ export async function createTrip(
   startDate: string,
   endDate: string
 ): Promise<string> {
-  const { data, error } = await supabase
-    .from('trips')
-    .insert({ name, start_date: startDate, end_date: endDate })
-    .select('id')
-    .single()
-  if (error || !data) throw new Error(error?.message ?? 'createTrip failed')
+  // Generate UUID client-side to avoid the RLS chicken-and-egg problem:
+  // INSERT...RETURNING triggers trips_read policy before trip_members row exists.
+  const tripId = crypto.randomUUID()
 
-  await supabase.from('trip_members').insert({ trip_id: data.id, user_email: ownerEmail })
+  const { error } = await supabase
+    .from('trips')
+    .insert({ id: tripId, name, start_date: startDate, end_date: endDate })
+  if (error) throw new Error(error.message)
+
+  await supabase.from('trip_members').insert({ trip_id: tripId, user_email: ownerEmail })
 
   const days: { trip_id: string; date: string; label: string; sort_order: number }[] = []
   const [sy, sm, sd] = startDate.split('-').map(Number)
@@ -57,12 +59,12 @@ export async function createTrip(
     const y = current.getFullYear()
     const mo = String(current.getMonth() + 1).padStart(2, '0')
     const d = String(current.getDate()).padStart(2, '0')
-    days.push({ trip_id: data.id, date: `${y}-${mo}-${d}`, label: '', sort_order: sortOrder++ })
+    days.push({ trip_id: tripId, date: `${y}-${mo}-${d}`, label: '', sort_order: sortOrder++ })
     current.setDate(current.getDate() + 1)
   }
   await supabase.from('days').insert(days)
 
-  return data.id
+  return tripId
 }
 
 export async function joinTrip(tripId: string, email: string): Promise<boolean> {
