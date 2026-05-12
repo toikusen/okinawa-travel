@@ -83,8 +83,8 @@ export function TimelinePage() {
         <h1 className="text-base font-bold text-[#1a2530]">{trip.name}</h1>
         <div className="flex items-center gap-3">
           <SyncIndicator status={syncStatus} />
-          {user?.photoURL && (
-            <img src={user.photoURL} alt="" className="w-7 h-7 rounded-full" />
+          {user?.user_metadata?.avatar_url && (
+            <img src={user.user_metadata.avatar_url as string} alt="" className="w-7 h-7 rounded-full" />
           )}
         </div>
       </header>

@@ -70,10 +70,10 @@ export function SettingsPage() {
         <section className="bg-white rounded-[12px] p-4 border border-[#e8edf2]">
           <p className="text-xs font-semibold text-[#8fa0b0] mb-3">帳號</p>
           <div className="flex items-center gap-3 mb-4">
-            {user?.photoURL && (
-              <img src={user.photoURL} alt="" className="w-8 h-8 rounded-full" />
+            {user?.user_metadata?.avatar_url && (
+              <img src={user.user_metadata.avatar_url as string} alt="" className="w-8 h-8 rounded-full" />
             )}
-            <p className="text-sm text-[#1a2530]">{user?.displayName}</p>
+            <p className="text-sm text-[#1a2530]">{user?.user_metadata?.full_name as string}</p>
           </div>
           <button
             onClick={handleSignOut}
