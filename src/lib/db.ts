@@ -88,7 +88,10 @@ export async function joinTrip(
 ): Promise<boolean> {
   const { error } = await supabase
     .from('trip_members')
-    .insert({ trip_id: tripId, user_email: email, display_name: displayName, avatar_url: avatarUrl })
+    .upsert(
+      { trip_id: tripId, user_email: email, display_name: displayName, avatar_url: avatarUrl },
+      { onConflict: 'trip_id,user_email', ignoreDuplicates: true }
+    )
   return !error
 }
 
