@@ -92,6 +92,7 @@ export async function joinTrip(
       { trip_id: tripId, user_email: email, display_name: displayName, avatar_url: avatarUrl },
       { onConflict: 'trip_id,user_email', ignoreDuplicates: true }
     )
+  if (error) console.error('[joinTrip] failed:', error)
   return !error
 }
 
