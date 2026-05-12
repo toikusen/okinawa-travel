@@ -101,7 +101,7 @@ export function subscribeToDays(
 }
 
 export async function updateDayLabel(
-  tripId: string,
+  _tripId: string,
   dayId: string,
   label: string
 ): Promise<void> {
@@ -111,7 +111,7 @@ export async function updateDayLabel(
 // --- Events ---
 
 export function subscribeToEvents(
-  tripId: string,
+  _tripId: string,
   dayId: string,
   onEvents: (events: TripEvent[]) => void
 ): () => void {
