@@ -1,3 +1,88 @@
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
+import { useTrip } from '../hooks/useTrip'
+import { updateTripName } from '../lib/firestore'
+
+const TRIP_ID_KEY = 'okinawa_trip_id'
+
 export function SettingsPage() {
-  return <div className="p-4 text-[#1a2530]">Settings (placeholder)</div>
+  const { user, signOut } = useAuth()
+  const navigate = useNavigate()
+  const tripId = localStorage.getItem(TRIP_ID_KEY)
+  const { trip } = useTrip(tripId)
+  const [nameInput, setNameInput] = useState('')
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    if (trip?.name) setNameInput(trip.name)
+  }, [trip?.name])
+
+  const handleSaveName = async () => {
+    if (!tripId || !nameInput.trim()) return
+    await updateTripName(tripId, nameInput.trim())
+  }
+
+  const handleCopyInvite = async () => {
+    if (!tripId) return
+    const url = `${window.location.origin}/join/${tripId}`
+    await navigator.clipboard.writeText(url)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleSignOut = async () => {
+    await signOut()
+    navigate('/', { replace: true })
+  }
+
+  return (
+    <div className="min-h-screen bg-[#f0f4f8] flex flex-col max-w-lg mx-auto">
+      <header className="bg-white border-b border-[#e8edf2] px-4 py-3 flex items-center gap-3 sticky top-0">
+        <button onClick={() => navigate(-1)} className="text-[#0077b6] text-sm">
+          ← 返回
+        </button>
+        <h1 className="text-base font-bold text-[#1a2530]">設定</h1>
+      </header>
+
+      <main className="px-4 py-6 flex flex-col gap-4">
+        <section className="bg-white rounded-[12px] p-4 border border-[#e8edf2]">
+          <p className="text-xs font-semibold text-[#8fa0b0] mb-2">旅程名稱</p>
+          <input
+            className="w-full border border-[#e8edf2] rounded-[8px] px-3 py-2 text-sm text-[#1a2530]"
+            value={nameInput}
+            onChange={(e) => setNameInput(e.target.value)}
+            onBlur={handleSaveName}
+            onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+          />
+        </section>
+
+        <section className="bg-white rounded-[12px] p-4 border border-[#e8edf2]">
+          <p className="text-xs font-semibold text-[#8fa0b0] mb-2">邀請同伴</p>
+          <button
+            onClick={handleCopyInvite}
+            className="w-full bg-[#f0f4f8] text-[#0077b6] rounded-[8px] py-2.5 text-sm font-semibold active:opacity-70"
+          >
+            {copied ? '✓ 已複製連結' : '複製邀請連結'}
+          </button>
+        </section>
+
+        <section className="bg-white rounded-[12px] p-4 border border-[#e8edf2]">
+          <p className="text-xs font-semibold text-[#8fa0b0] mb-3">帳號</p>
+          <div className="flex items-center gap-3 mb-4">
+            {user?.photoURL && (
+              <img src={user.photoURL} alt="" className="w-8 h-8 rounded-full" />
+            )}
+            <p className="text-sm text-[#1a2530]">{user?.displayName}</p>
+          </div>
+          <button
+            onClick={handleSignOut}
+            className="w-full bg-[#fee2e2] text-[#dc2626] rounded-[8px] py-2.5 text-sm font-semibold"
+          >
+            登出
+          </button>
+        </section>
+      </main>
+    </div>
+  )
 }
