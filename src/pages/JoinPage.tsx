@@ -18,13 +18,21 @@ export function JoinPage() {
     const email = user.email
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      let jwtClaims: Record<string, unknown> = {}
+      try {
+        const b64 = session?.access_token?.split('.')[1]?.replace(/-/g, '+').replace(/_/g, '/')
+        if (b64) jwtClaims = JSON.parse(atob(b64))
+      } catch { /* ignore */ }
+
       console.log('[JoinPage] session check:', {
         hasSession: !!session,
         sessionEmail: session?.user?.email,
         reactUserEmail: user.email,
         hasAccessToken: !!session?.access_token,
-        tokenExpiry: session?.expires_at,
         role: session?.user?.role,
+        jwtEmail: jwtClaims['email'],
+        jwtRole: jwtClaims['role'],
+        jwtAud: jwtClaims['aud'],
       })
 
       const displayName = (user.user_metadata?.full_name as string) ?? email
