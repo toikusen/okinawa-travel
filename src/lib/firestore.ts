@@ -33,12 +33,17 @@ export async function createTrip(
   })
   const batch = writeBatch(db)
   let sortOrder = 0
-  const current = new Date(startDate + 'T00:00:00')
-  const end = new Date(endDate + 'T00:00:00')
+  const [sy, sm, sd] = startDate.split('-').map(Number)
+  const [ey, em, ed] = endDate.split('-').map(Number)
+  const current = new Date(sy, sm - 1, sd)
+  const end = new Date(ey, em - 1, ed)
   while (current <= end) {
     const dayRef = doc(collection(db, 'trips', tripRef.id, 'days'))
+    const y = current.getFullYear()
+    const m = String(current.getMonth() + 1).padStart(2, '0')
+    const d = String(current.getDate()).padStart(2, '0')
     batch.set(dayRef, {
-      date: current.toISOString().split('T')[0],
+      date: `${y}-${m}-${d}`,
       label: '',
       sort_order: sortOrder++,
     })
