@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { joinTrip } from '../lib/db'
+import { supabase } from '../supabase'
 
 const TRIP_ID_KEY = 'okinawa_trip_id'
 
@@ -14,15 +15,26 @@ export function JoinPage() {
   useEffect(() => {
     if (!tripId || !user?.email) return
 
-    const displayName = (user.user_metadata?.full_name as string) ?? user.email ?? ''
-    const avatarUrl = (user.user_metadata?.avatar_url as string) ?? ''
-    joinTrip(tripId, user.email, displayName, avatarUrl).then((success) => {
-      if (success) {
-        localStorage.setItem(TRIP_ID_KEY, tripId)
-        navigate('/', { replace: true })
-      } else {
-        setStatus('error')
-      }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('[JoinPage] session check:', {
+        hasSession: !!session,
+        sessionEmail: session?.user?.email,
+        reactUserEmail: user.email,
+        hasAccessToken: !!session?.access_token,
+        tokenExpiry: session?.expires_at,
+        role: session?.user?.role,
+      })
+
+      const displayName = (user.user_metadata?.full_name as string) ?? user.email ?? ''
+      const avatarUrl = (user.user_metadata?.avatar_url as string) ?? ''
+      joinTrip(tripId, user.email, displayName, avatarUrl).then((success) => {
+        if (success) {
+          localStorage.setItem(TRIP_ID_KEY, tripId)
+          navigate('/', { replace: true })
+        } else {
+          setStatus('error')
+        }
+      })
     })
   }, [tripId, user, navigate])
 
