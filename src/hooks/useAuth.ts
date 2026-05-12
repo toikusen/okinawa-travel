@@ -20,10 +20,10 @@ export function useAuth() {
     return () => subscription.unsubscribe()
   }, [])
 
-  const signIn = () =>
+  const signIn = (redirectTo?: string) =>
     supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: redirectTo ?? window.location.origin },
     })
 
   const signOut = () => supabase.auth.signOut()
