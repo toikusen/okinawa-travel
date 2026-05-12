@@ -14,6 +14,7 @@ export function JoinPage() {
 
   useEffect(() => {
     if (!tripId || !user?.email) return
+    const tid = tripId
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('[JoinPage] session check:', {
@@ -27,9 +28,9 @@ export function JoinPage() {
 
       const displayName = (user.user_metadata?.full_name as string) ?? user.email ?? ''
       const avatarUrl = (user.user_metadata?.avatar_url as string) ?? ''
-      joinTrip(tripId, user.email, displayName, avatarUrl).then((success) => {
+      joinTrip(tid, user.email, displayName, avatarUrl).then((success) => {
         if (success) {
-          localStorage.setItem(TRIP_ID_KEY, tripId)
+          localStorage.setItem(TRIP_ID_KEY, tid)
           navigate('/', { replace: true })
         } else {
           setStatus('error')
