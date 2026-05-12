@@ -1,3 +1,6 @@
+# Superpowers plugin artifacts
+.superpowers/
+
 # Logs
 logs
 *.log
