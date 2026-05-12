@@ -82,18 +82,13 @@ export async function createTrip(
 
 export async function joinTrip(
   tripId: string,
-  email: string,
-  displayName: string,
-  avatarUrl: string
+  _email: string,
+  _displayName: string,
+  _avatarUrl: string
 ): Promise<boolean> {
-  const { error } = await supabase
-    .from('trip_members')
-    .upsert(
-      { trip_id: tripId, user_email: email, display_name: displayName, avatar_url: avatarUrl },
-      { onConflict: 'trip_id,user_email', ignoreDuplicates: true }
-    )
-  if (error) console.error('[joinTrip] failed:', error)
-  return !error
+  const { data, error } = await supabase.rpc('join_trip_rpc', { p_trip_id: tripId })
+  if (error) console.error('[joinTrip] rpc failed:', error)
+  return !error && data === true
 }
 
 export async function removeMember(tripId: string, email: string): Promise<void> {
