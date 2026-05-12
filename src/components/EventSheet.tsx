@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import type { TripEvent, ForkItem } from '../types'
+import type { TripEvent, ForkItem, TripMember } from '../types'
 import { createEvent, updateEvent, deleteEvent } from '../lib/db'
 
 interface Props {
@@ -8,12 +8,13 @@ interface Props {
   dayId: string
   tripId: string
   eventCount: number
+  members?: TripMember[]
   onClose: () => void
 }
 
 const emptyFork = (): ForkItem => ({ person: '', title: '', location: '', notes: '' })
 
-export function EventSheet({ open, event, dayId, tripId, eventCount, onClose }: Props) {
+export function EventSheet({ open, event, dayId, tripId, eventCount, members = [], onClose }: Props) {
   const isEdit = event !== null
   const [type, setType] = useState<'shared' | 'fork'>('shared')
   const [title, setTitle] = useState('')
@@ -181,12 +182,28 @@ export function EventSheet({ open, event, dayId, tripId, eventCount, onClose }: 
                 ] as const
               ).map(({ item, setItem, label }) => (
                 <div key={label} className="flex-1 bg-[#f8f9fa] rounded-[8px] p-2 flex flex-col gap-1.5">
-                  <input
-                    className={`${inputCls} !bg-white`}
-                    placeholder={`人名 ${label}`}
-                    value={item.person}
-                    onChange={(e) => setItem({ ...item, person: e.target.value })}
-                  />
+                  {members.length > 0 ? (
+                    <select
+                      className={`${inputCls} !bg-white`}
+                      value={item.person}
+                      onChange={(e) => setItem({ ...item, person: e.target.value })}
+                      aria-label={`人名 ${label}`}
+                    >
+                      <option value="">選擇成員</option>
+                      {members.map((m) => (
+                        <option key={m.email} value={m.display_name || m.email}>
+                          {m.display_name || m.email}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      className={`${inputCls} !bg-white`}
+                      placeholder={`人名 ${label}`}
+                      value={item.person}
+                      onChange={(e) => setItem({ ...item, person: e.target.value })}
+                    />
+                  )}
                   <input
                     className={`${inputCls} !bg-white`}
                     placeholder="活動"

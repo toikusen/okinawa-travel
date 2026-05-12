@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useTrip } from '../hooks/useTrip'
-import { updateTripName } from '../lib/db'
+import { updateTripName, removeMember } from '../lib/db'
 
 const TRIP_ID_KEY = 'okinawa_trip_id'
 
@@ -13,10 +13,13 @@ export function SettingsPage() {
   const { trip } = useTrip(tripId)
   const [nameInput, setNameInput] = useState('')
   const [copied, setCopied] = useState(false)
+  const [removing, setRemoving] = useState<string | null>(null)
 
   useEffect(() => {
     if (trip?.name) setNameInput(trip.name)
   }, [trip?.name])
+
+  const isOwner = trip?.owner_email === user?.email
 
   const handleSaveName = async () => {
     if (!tripId || !nameInput.trim()) return
@@ -29,6 +32,13 @@ export function SettingsPage() {
     await navigator.clipboard.writeText(url)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleRemoveMember = async (email: string) => {
+    if (!tripId) return
+    setRemoving(email)
+    await removeMember(tripId, email)
+    setRemoving(null)
   }
 
   const handleSignOut = async () => {
@@ -58,7 +68,44 @@ export function SettingsPage() {
         </section>
 
         <section className="bg-white rounded-[12px] p-4 border border-[#e8edf2]">
-          <p className="text-xs font-semibold text-[#8fa0b0] mb-2">邀請同伴</p>
+          <p className="text-xs font-semibold text-[#8fa0b0] mb-3">
+            旅伴 {trip ? `(${trip.members.length})` : ''}
+          </p>
+          <div className="flex flex-col gap-3 mb-3">
+            {trip?.members.map((member) => (
+              <div key={member.email} className="flex items-center gap-3">
+                {member.avatar_url ? (
+                  <img src={member.avatar_url} alt="" className="w-8 h-8 rounded-full shrink-0" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-[#e8edf2] flex items-center justify-center shrink-0">
+                    <span className="text-xs font-semibold text-[#5a7a8a]">
+                      {(member.display_name || member.email).charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-[#1a2530] truncate">
+                    {member.display_name || member.email}
+                  </p>
+                  {member.display_name && (
+                    <p className="text-[11px] text-[#8fa0b0] truncate">{member.email}</p>
+                  )}
+                  {trip.owner_email === member.email && (
+                    <p className="text-[10px] text-[#0077b6] font-semibold">主揪</p>
+                  )}
+                </div>
+                {isOwner && member.email !== user?.email && (
+                  <button
+                    onClick={() => handleRemoveMember(member.email)}
+                    disabled={removing === member.email}
+                    className="text-[#dc2626] text-xs font-semibold shrink-0 disabled:opacity-40"
+                  >
+                    {removing === member.email ? '移除中' : '移除'}
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
           <button
             onClick={handleCopyInvite}
             className="w-full bg-[#f0f4f8] text-[#0077b6] rounded-[8px] py-2.5 text-sm font-semibold active:opacity-70"

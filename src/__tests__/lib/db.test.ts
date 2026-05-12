@@ -42,12 +42,17 @@ describe('createTrip', () => {
       return {}
     })
 
-    const id = await createTrip('沖繩 2025', 'sei@test.com', '2025-06-11', '2025-06-12')
+    const id = await createTrip('沖繩 2025', 'sei@test.com', 'Sei', 'https://avatar.url', '2025-06-11', '2025-06-12')
 
     // Returns a client-generated UUID (not predictable, just verify format)
     expect(id).toMatch(/^[0-9a-f-]{36}$/)
-    expect(tripsInsert).toHaveBeenCalledWith(expect.objectContaining({ name: '沖繩 2025' }))
-    expect(memberInsert).toHaveBeenCalledWith({ trip_id: id, user_email: 'sei@test.com' })
+    expect(tripsInsert).toHaveBeenCalledWith(expect.objectContaining({ name: '沖繩 2025', owner_email: 'sei@test.com' }))
+    expect(memberInsert).toHaveBeenCalledWith({
+      trip_id: id,
+      user_email: 'sei@test.com',
+      display_name: 'Sei',
+      avatar_url: 'https://avatar.url',
+    })
 
     const [daysArg] = dayInsert.mock.calls[0] as [Array<{ date: string }>]
     expect(daysArg.length).toBe(2)
@@ -61,7 +66,7 @@ describe('joinTrip', () => {
     mockFrom.mockReturnValue({
       insert: vi.fn().mockResolvedValue({ error: { message: 'violates row-level security' } }),
     })
-    const result = await joinTrip('bad-trip-id', 'user@test.com')
+    const result = await joinTrip('bad-trip-id', 'user@test.com', 'User', '')
     expect(result).toBe(false)
   })
 
@@ -69,7 +74,7 @@ describe('joinTrip', () => {
     mockFrom.mockReturnValue({
       insert: vi.fn().mockResolvedValue({ error: null }),
     })
-    const result = await joinTrip('trip-id', 'user@test.com')
+    const result = await joinTrip('trip-id', 'user@test.com', 'User', '')
     expect(result).toBe(true)
   })
 })

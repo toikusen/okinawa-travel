@@ -12,7 +12,7 @@ import { reorderEvents, updateDayLabel } from '../lib/db'
 import { EventCard } from './EventCard'
 import { ForkCard } from './ForkCard'
 import { EventSheet } from './EventSheet'
-import type { Day, TripEvent } from '../types'
+import type { Day, TripEvent, TripMember } from '../types'
 
 function SortableCard({
   event,
@@ -44,9 +44,10 @@ function SortableCard({
 interface Props {
   day: Day
   tripId: string
+  members: TripMember[]
 }
 
-export function DaySection({ day, tripId }: Props) {
+export function DaySection({ day, tripId, members }: Props) {
   const events = useEvents(tripId, day.id)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<TripEvent | null>(null)
@@ -134,6 +135,7 @@ export function DaySection({ day, tripId }: Props) {
         dayId={day.id}
         tripId={tripId}
         eventCount={events.length}
+        members={members}
         onClose={() => setSheetOpen(false)}
       />
     </section>

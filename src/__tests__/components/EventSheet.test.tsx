@@ -44,13 +44,28 @@ describe('EventSheet', () => {
     expect(screen.getByDisplayValue('美麗海水族館')).toBeInTheDocument()
   })
 
-  it('switches to fork mode when 分岔 toggle clicked', () => {
+  it('switches to fork mode and shows text inputs when no members provided', () => {
     render(
       <EventSheet open={true} event={null} dayId="d1" tripId="t1" eventCount={0} onClose={() => {}} />
     )
     fireEvent.click(screen.getByText('分岔'))
     expect(screen.getByPlaceholderText('人名 A')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('人名 B')).toBeInTheDocument()
+  })
+
+  it('switches to fork mode and shows member selects when members provided', () => {
+    const members = [
+      { email: 'a@test.com', display_name: 'Alice', avatar_url: '' },
+      { email: 'b@test.com', display_name: 'Bob', avatar_url: '' },
+    ]
+    render(
+      <EventSheet open={true} event={null} dayId="d1" tripId="t1" eventCount={0} members={members} onClose={() => {}} />
+    )
+    fireEvent.click(screen.getByText('分岔'))
+    const selects = screen.getAllByRole('combobox')
+    expect(selects).toHaveLength(2)
+    expect(screen.getAllByText('Alice')).toHaveLength(2)
+    expect(screen.getAllByText('Bob')).toHaveLength(2)
   })
 
   it('calls onClose when backdrop clicked', () => {

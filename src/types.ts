@@ -24,10 +24,17 @@ export interface Day {
   sort_order: number
 }
 
+export interface TripMember {
+  email: string
+  display_name: string
+  avatar_url: string
+}
+
 export interface Trip {
   id: string
   name: string
-  members: string[]  // email addresses
-  start_date: string // 'YYYY-MM-DD'
-  end_date: string   // 'YYYY-MM-DD'
+  owner_email: string
+  members: TripMember[]
+  start_date: string
+  end_date: string
 }

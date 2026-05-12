@@ -1,5 +1,5 @@
 import { supabase } from '../supabase'
-import type { Trip, Day, TripEvent } from '../types'
+import type { Trip, TripMember, Day, TripEvent } from '../types'
 
 // --- Trip ---
 
@@ -10,16 +10,21 @@ export function subscribeToTrip(
   const fetch = async () => {
     const { data, error } = await supabase
       .from('trips')
-      .select('*, trip_members(user_email)')
+      .select('*, trip_members(user_email, display_name, avatar_url)')
       .eq('id', tripId)
       .single()
     if (error || !data) { onTrip(null); return }
     onTrip({
       id: data.id,
       name: data.name,
+      owner_email: data.owner_email ?? '',
       start_date: data.start_date,
       end_date: data.end_date,
-      members: (data.trip_members as { user_email: string }[]).map(m => m.user_email),
+      members: (data.trip_members as { user_email: string; display_name: string; avatar_url: string }[]).map(m => ({
+        email: m.user_email,
+        display_name: m.display_name,
+        avatar_url: m.avatar_url,
+      })),
     })
   }
   fetch()
@@ -27,6 +32,7 @@ export function subscribeToTrip(
   const channel = supabase
     .channel(`trip-${tripId}`)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'trips', filter: `id=eq.${tripId}` }, fetch)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'trip_members', filter: `trip_id=eq.${tripId}` }, fetch)
     .subscribe()
 
   return () => { supabase.removeChannel(channel) }
@@ -35,6 +41,8 @@ export function subscribeToTrip(
 export async function createTrip(
   name: string,
   ownerEmail: string,
+  ownerDisplayName: string,
+  ownerAvatarUrl: string,
   startDate: string,
   endDate: string
 ): Promise<string> {
@@ -44,10 +52,15 @@ export async function createTrip(
 
   const { error } = await supabase
     .from('trips')
-    .insert({ id: tripId, name, start_date: startDate, end_date: endDate })
+    .insert({ id: tripId, name, start_date: startDate, end_date: endDate, owner_email: ownerEmail })
   if (error) throw new Error(error.message)
 
-  await supabase.from('trip_members').insert({ trip_id: tripId, user_email: ownerEmail })
+  await supabase.from('trip_members').insert({
+    trip_id: tripId,
+    user_email: ownerEmail,
+    display_name: ownerDisplayName,
+    avatar_url: ownerAvatarUrl,
+  })
 
   const days: { trip_id: string; date: string; label: string; sort_order: number }[] = []
   const [sy, sm, sd] = startDate.split('-').map(Number)
@@ -67,11 +80,22 @@ export async function createTrip(
   return tripId
 }
 
-export async function joinTrip(tripId: string, email: string): Promise<boolean> {
+export async function joinTrip(
+  tripId: string,
+  email: string,
+  displayName: string,
+  avatarUrl: string
+): Promise<boolean> {
   const { error } = await supabase
     .from('trip_members')
-    .insert({ trip_id: tripId, user_email: email })
+    .insert({ trip_id: tripId, user_email: email, display_name: displayName, avatar_url: avatarUrl })
   return !error
+}
+
+export async function removeMember(tripId: string, email: string): Promise<void> {
+  await supabase.from('trip_members').delete()
+    .eq('trip_id', tripId)
+    .eq('user_email', email)
 }
 
 export async function updateTripName(tripId: string, name: string): Promise<void> {
@@ -177,3 +201,6 @@ export async function reorderEvents(
     )
   )
 }
+
+// Re-export TripMember so callers don't need to import from types directly
+export type { TripMember }

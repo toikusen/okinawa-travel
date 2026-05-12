@@ -14,7 +14,9 @@ export function JoinPage() {
   useEffect(() => {
     if (!tripId || !user?.email) return
 
-    joinTrip(tripId, user.email).then((success) => {
+    const displayName = (user.user_metadata?.full_name as string) ?? user.email ?? ''
+    const avatarUrl = (user.user_metadata?.avatar_url as string) ?? ''
+    joinTrip(tripId, user.email, displayName, avatarUrl).then((success) => {
       if (success) {
         localStorage.setItem(TRIP_ID_KEY, tripId)
         navigate('/', { replace: true })

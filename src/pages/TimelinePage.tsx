@@ -25,7 +25,9 @@ export function TimelinePage() {
   const handleCreateTrip = async () => {
     if (!user?.email || !startDate || !endDate) return
     setCreating(true)
-    const id = await createTrip(tripName, user.email, startDate, endDate)
+    const displayName = (user.user_metadata?.full_name as string) ?? user.email ?? ''
+    const avatarUrl = (user.user_metadata?.avatar_url as string) ?? ''
+    const id = await createTrip(tripName, user.email, displayName, avatarUrl, startDate, endDate)
     localStorage.setItem(TRIP_ID_KEY, id)
     setTripId(id)
     setCreating(false)
@@ -92,7 +94,7 @@ export function TimelinePage() {
       <main className="flex-1 overflow-y-auto px-4 py-4">
         <div className="flex flex-col gap-6">
           {days.map((day) => (
-            <DaySection key={day.id} day={day} tripId={trip.id} />
+            <DaySection key={day.id} day={day} tripId={trip.id} members={trip.members} />
           ))}
         </div>
       </main>
