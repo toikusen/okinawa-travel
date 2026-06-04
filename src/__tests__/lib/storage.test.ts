@@ -39,4 +39,12 @@ describe('uploadEventImage', () => {
     const file = new File(['data'], 'photo.jpg', { type: 'image/jpeg' })
     await expect(uploadEventImage('trip1', 'event1', file)).rejects.toThrow('upload error')
   })
+
+  it('throws when getPublicUrl returns no URL', async () => {
+    mockStorage._upload.mockResolvedValue({ error: null })
+    mockStorage._getPublicUrl.mockReturnValue({ data: { publicUrl: '' } })
+
+    const file = new File(['data'], 'photo.jpg', { type: 'image/jpeg' })
+    await expect(uploadEventImage('trip1', 'event1', file)).rejects.toThrow('Failed to get public URL')
+  })
 })

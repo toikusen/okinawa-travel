@@ -15,5 +15,6 @@ export async function uploadEventImage(
   if (error) throw new Error(error.message)
 
   const { data } = supabase.storage.from('event-images').getPublicUrl(path)
+  if (!data?.publicUrl) throw new Error('Failed to get public URL')
   return data.publicUrl
 }
