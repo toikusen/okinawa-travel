@@ -42,14 +42,22 @@ link_url?: string
 
 ### `EventCard.tsx` (modified)
 
-- If `image_url` exists: show 56×56px rounded thumbnail on the right, clickable (`onImageClick` callback)
+- If `image_url` exists: show 56×56px rounded thumbnail on the right, clickable (`onImageClick` callback); edit button is moved into `EventDetailSheet`
 - If no `image_url`: show existing edit button as before
-- On image load error: silently hide thumbnail (no broken image shown)
+- On image load error: silently hide thumbnail, fall back to showing edit button
 
-Layout:
+Layout (with image):
 ```
 [time]
-[title]           [thumbnail OR edit button]
+[title]           [thumbnail]
+[location]
+[notes]
+```
+
+Layout (without image):
+```
+[time]
+[title]           [edit button]
 [location]
 [notes]
 ```
@@ -76,6 +84,7 @@ Bottom sheet opened by tapping the thumbnail in EventCard:
 [full-width image, ~200px tall]
 [event title + location]
 [「前往官網」button]   ← only shown when link_url exists
+[「編輯行程」button]   ← opens EventSheet (replaces edit button removed from EventCard)
 [close / drag to dismiss]
 ```
 
@@ -93,10 +102,17 @@ Uploads to `event-images/{tripId}/{eventId}.{ext}`, returns public URL.
 
 ### Upload
 
+**New event:**
+1. On save: generate `id = crypto.randomUUID()` client-side
+2. If image selected: `uploadEventImage(tripId, id, file)` → returns public URL
+3. `createEvent(..., { id, image_url, link_url })` — uses the same pre-generated id
+
+**Existing event:**
 1. User picks image in EventSheet → local preview shown immediately
-2. On save: `uploadEventImage()` runs first → returns public URL
-3. `createEvent` / `updateEvent` called with `image_url` + `link_url` included
-4. Save button shows loading state throughout; disabled to prevent duplicate submissions
+2. On save: `uploadEventImage(tripId, event.id, file)` → overwrites existing file at same path
+3. `updateEvent` called with new `image_url` + `link_url`
+
+Save button shows loading state throughout; disabled to prevent duplicate submissions.
 
 ### Remove image
 
