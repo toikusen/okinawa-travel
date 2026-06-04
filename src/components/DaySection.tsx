@@ -17,9 +17,11 @@ import type { Day, TripEvent, TripMember } from '../types'
 function SortableCard({
   event,
   onEdit,
+  dayDate,
 }: {
   event: TripEvent
   onEdit: (e: TripEvent) => void
+  dayDate: string
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: event.id })
@@ -31,7 +33,14 @@ function SortableCard({
   }
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      data-date={dayDate}
+      data-time-start={event.time_start}
+    >
       {event.type === 'fork' ? (
         <ForkCard event={event} onClick={onEdit} />
       ) : (
@@ -123,7 +132,7 @@ export function DaySection({ day, tripId, members }: Props) {
         <SortableContext items={events.map((e) => e.id)} strategy={verticalListSortingStrategy}>
           <div className="flex flex-col gap-2">
             {events.map((event) => (
-              <SortableCard key={event.id} event={event} onEdit={openEdit} />
+              <SortableCard key={event.id} event={event} onEdit={openEdit} dayDate={day.date} />
             ))}
           </div>
         </SortableContext>

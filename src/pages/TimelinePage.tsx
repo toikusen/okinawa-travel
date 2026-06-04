@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useTrip } from '../hooks/useTrip'
@@ -16,6 +16,61 @@ export function TimelinePage() {
   const [tripId, setTripId] = useState<string | null>(() => localStorage.getItem(TRIP_ID_KEY))
   const { trip, days, loading } = useTrip(tripId)
   const syncStatus = useSyncStatus()
+
+  useEffect(() => {
+    if (!days.length) return
+
+    const now = new Date()
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+
+    const toMinutes = (t: string) => {
+      const [h, m] = t.split(':').map(Number)
+      return (h || 0) * 60 + (m || 0)
+    }
+    const currentMinutes = now.getHours() * 60 + now.getMinutes()
+
+    let attempts = 0
+    let timer: ReturnType<typeof setTimeout>
+
+    const tryScroll = () => {
+      const todayEvents = Array.from(
+        document.querySelectorAll<HTMLElement>(`[data-date="${todayStr}"]`)
+      ).sort((a, b) => toMinutes(a.dataset.timeStart ?? '') - toMinutes(b.dataset.timeStart ?? ''))
+
+      if (!todayEvents.length) {
+        if (attempts < 10) {
+          attempts++
+          timer = setTimeout(tryScroll, 300)
+        }
+        return
+      }
+
+      let target: HTMLElement | null = null
+      let lastPast: HTMLElement | null = null
+
+      for (const el of todayEvents) {
+        const minutes = toMinutes(el.dataset.timeStart ?? '')
+        if (minutes <= currentMinutes) {
+          lastPast = el
+        } else {
+          target = el
+          break
+        }
+      }
+
+      // 優先顯示目前正在進行的行程；若還沒開始，顯示下一個
+      const scrollTarget = lastPast ?? target ?? todayEvents[0]
+      if (scrollTarget) {
+        const headerHeight = document.querySelector('header')?.getBoundingClientRect().height ?? 56
+        scrollTarget.style.scrollMarginTop = `${headerHeight + 8}px`
+        scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    }
+
+    timer = setTimeout(tryScroll, 300)
+
+    return () => clearTimeout(timer)
+  }, [days.length])
 
   const [tripName, setTripName] = useState('沖繩旅遊')
   const [startDate, setStartDate] = useState('')
