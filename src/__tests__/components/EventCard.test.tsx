@@ -33,3 +33,34 @@ describe('EventCard', () => {
     expect(onClick).toHaveBeenCalledWith(sharedEvent)
   })
 })
+
+const eventWithImage: TripEvent = {
+  ...sharedEvent,
+  image_url: 'https://cdn.example.com/img.jpg',
+  link_url: 'https://example.com',
+}
+
+describe('EventCard with image', () => {
+  it('shows thumbnail img when image_url is present', () => {
+    render(<EventCard event={eventWithImage} onClick={() => {}} onImageClick={() => {}} />)
+    const img = screen.getByRole('img')
+    expect(img).toHaveAttribute('src', 'https://cdn.example.com/img.jpg')
+  })
+
+  it('calls onImageClick when thumbnail is tapped', () => {
+    const onImageClick = vi.fn()
+    render(<EventCard event={eventWithImage} onClick={() => {}} onImageClick={onImageClick} />)
+    fireEvent.click(screen.getByRole('img'))
+    expect(onImageClick).toHaveBeenCalledWith(eventWithImage)
+  })
+
+  it('shows edit button when no image_url', () => {
+    render(<EventCard event={sharedEvent} onClick={() => {}} />)
+    expect(screen.getByLabelText('編輯行程')).toBeInTheDocument()
+  })
+
+  it('hides edit button when image_url is present', () => {
+    render(<EventCard event={eventWithImage} onClick={() => {}} onImageClick={() => {}} />)
+    expect(screen.queryByLabelText('編輯行程')).toBeNull()
+  })
+})
