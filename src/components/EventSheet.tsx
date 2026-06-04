@@ -15,6 +15,11 @@ interface Props {
 
 const emptyFork = (): ForkItem => ({ person: '', title: '', location: '', notes: '' })
 
+function sanitizeLinkUrl(url: string): string | null {
+  if (!url) return null
+  return /^https?:\/\//i.test(url) ? url : null
+}
+
 export function EventSheet({ open, event, dayId, tripId, events, members = [], onClose }: Props) {
   const isEdit = event !== null
   const [type, setType] = useState<'shared' | 'fork'>('shared')
@@ -76,47 +81,51 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
 
   const handleSave = async () => {
     setSaving(true)
+    try {
+      let resolvedImageUrl: string | null = imageUrl
+      let preGeneratedId: string | undefined
 
-    let resolvedImageUrl: string | null = imageUrl
-    let preGeneratedId: string | undefined
-
-    if (imageFile) {
-      preGeneratedId = isEdit ? event!.id : crypto.randomUUID()
-      try {
-        resolvedImageUrl = await uploadEventImage(tripId, preGeneratedId, imageFile)
-      } catch {
-        alert('圖片上傳失敗，請重試')
-        resolvedImageUrl = isEdit ? (event!.image_url ?? null) : null
+      if (imageFile) {
+        preGeneratedId = isEdit ? event!.id : crypto.randomUUID()
+        try {
+          resolvedImageUrl = await uploadEventImage(tripId, preGeneratedId, imageFile)
+        } catch {
+          alert('圖片上傳失敗，請重試')
+          resolvedImageUrl = isEdit ? (event!.image_url ?? null) : null
+        }
       }
-    }
 
-    const base = {
-      type,
-      time_start: timeStart,
-      time_end: timeEnd,
-      sort_order: isEdit ? event!.sort_order : events.length,
-    }
-    const data: Omit<TripEvent, 'id'> = type === 'shared'
-      ? { ...base, title, location, notes, image_url: resolvedImageUrl, link_url: linkUrl || null }
-      : { ...base, title: '', location: '', notes: '', fork_items: [forkA, forkB], image_url: resolvedImageUrl, link_url: linkUrl || null }
-
-    if (isEdit) {
-      await updateEvent(tripId, dayId, event!.id, data)
-    } else {
-      const newId = await createEvent(tripId, dayId, { ...data, ...(preGeneratedId ? { id: preGeneratedId } : {}) })
-      if (timeStart) {
-        const allEvents: TripEvent[] = [...events, { ...data, id: newId }]
-        const sorted = [...allEvents].sort((a, b) => {
-          const ta = a.time_start || '\xff'
-          const tb = b.time_start || '\xff'
-          return ta.localeCompare(tb)
-        })
-        await reorderEvents(tripId, dayId, sorted.map((e) => e.id))
+      const base = {
+        type,
+        time_start: timeStart,
+        time_end: timeEnd,
+        sort_order: isEdit ? event!.sort_order : events.length,
       }
-    }
+      const data: Omit<TripEvent, 'id'> = type === 'shared'
+        ? { ...base, title, location, notes, image_url: resolvedImageUrl, link_url: sanitizeLinkUrl(linkUrl) }
+        : { ...base, title: '', location: '', notes: '', fork_items: [forkA, forkB], image_url: resolvedImageUrl, link_url: sanitizeLinkUrl(linkUrl) }
 
-    setSaving(false)
-    onClose()
+      if (isEdit) {
+        await updateEvent(tripId, dayId, event!.id, data)
+      } else {
+        const newId = await createEvent(tripId, dayId, { ...data, ...(preGeneratedId ? { id: preGeneratedId } : {}) })
+        if (timeStart) {
+          const allEvents: TripEvent[] = [...events, { ...data, id: newId }]
+          const sorted = [...allEvents].sort((a, b) => {
+            const ta = a.time_start || '\xff'
+            const tb = b.time_start || '\xff'
+            return ta.localeCompare(tb)
+          })
+          await reorderEvents(tripId, dayId, sorted.map((e) => e.id))
+        }
+      }
+
+      onClose()
+    } catch {
+      alert('儲存失敗，請重試')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleDelete = async () => {

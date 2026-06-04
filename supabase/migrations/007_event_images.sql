@@ -22,3 +22,7 @@ create policy "trip members can update event images"
       select trip_id::text from trip_members where user_email = auth.email()
     )
   );
+
+create policy "public read event images"
+  on storage.objects for select to public
+  using (bucket_id = 'event-images');
