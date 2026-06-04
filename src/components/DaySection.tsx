@@ -12,15 +12,18 @@ import { reorderEvents, updateDayLabel } from '../lib/db'
 import { EventCard } from './EventCard'
 import { ForkCard } from './ForkCard'
 import { EventSheet } from './EventSheet'
+import { EventDetailSheet } from './EventDetailSheet'
 import type { Day, TripEvent, TripMember } from '../types'
 
 function SortableCard({
   event,
   onEdit,
+  onImageClick,
   dayDate,
 }: {
   event: TripEvent
   onEdit: (e: TripEvent) => void
+  onImageClick: (e: TripEvent) => void
   dayDate: string
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
@@ -44,7 +47,7 @@ function SortableCard({
       {event.type === 'fork' ? (
         <ForkCard event={event} onClick={onEdit} />
       ) : (
-        <EventCard event={event} onClick={onEdit} />
+        <EventCard event={event} onClick={onEdit} onImageClick={onImageClick} />
       )}
     </div>
   )
@@ -60,6 +63,8 @@ export function DaySection({ day, tripId, members }: Props) {
   const events = useEvents(tripId, day.id)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<TripEvent | null>(null)
+  const [detailOpen, setDetailOpen] = useState(false)
+  const [detailEvent, setDetailEvent] = useState<TripEvent | null>(null)
   const [editingLabel, setEditingLabel] = useState(false)
   const [labelDraft, setLabelDraft] = useState(day.label)
 
@@ -92,6 +97,18 @@ export function DaySection({ day, tripId, members }: Props) {
   }
 
   const openEdit = (e: TripEvent) => {
+    setSelectedEvent(e)
+    setSheetOpen(true)
+  }
+
+  const openDetail = (e: TripEvent) => {
+    setDetailEvent(e)
+    setDetailOpen(true)
+  }
+
+  const handleDetailEdit = (e: TripEvent) => {
+    setDetailOpen(false)
+    setDetailEvent(null)
     setSelectedEvent(e)
     setSheetOpen(true)
   }
@@ -132,7 +149,7 @@ export function DaySection({ day, tripId, members }: Props) {
         <SortableContext items={events.map((e) => e.id)} strategy={verticalListSortingStrategy}>
           <div className="flex flex-col gap-2">
             {events.map((event) => (
-              <SortableCard key={event.id} event={event} onEdit={openEdit} dayDate={day.date} />
+              <SortableCard key={event.id} event={event} onEdit={openEdit} onImageClick={openDetail} dayDate={day.date} />
             ))}
           </div>
         </SortableContext>
@@ -146,6 +163,13 @@ export function DaySection({ day, tripId, members }: Props) {
         events={events}
         members={members}
         onClose={() => setSheetOpen(false)}
+      />
+
+      <EventDetailSheet
+        open={detailOpen}
+        event={detailEvent}
+        onClose={() => { setDetailOpen(false); setDetailEvent(null) }}
+        onEdit={handleDetailEdit}
       />
     </section>
   )
