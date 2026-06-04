@@ -9,6 +9,10 @@ vi.mock('../../lib/db', () => ({
   deleteEvent: vi.fn().mockResolvedValue(undefined),
 }))
 
+vi.mock('../../lib/storage', () => ({
+  uploadEventImage: vi.fn().mockResolvedValue('https://cdn.example.com/new.jpg'),
+}))
+
 const sharedEvent: TripEvent = {
   id: 'e1',
   type: 'shared',
@@ -75,5 +79,41 @@ describe('EventSheet', () => {
     )
     fireEvent.click(screen.getByTestId('sheet-backdrop'))
     expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows image picker area', () => {
+    render(
+      <EventSheet open={true} event={null} dayId="d1" tripId="t1" events={[]} onClose={() => {}} />
+    )
+    expect(screen.getByText('新增圖片')).toBeInTheDocument()
+  })
+
+  it('shows link URL input', () => {
+    render(
+      <EventSheet open={true} event={null} dayId="d1" tripId="t1" events={[]} onClose={() => {}} />
+    )
+    expect(screen.getByPlaceholderText('https://...')).toBeInTheDocument()
+  })
+
+  it('pre-fills link_url from existing event', () => {
+    const eventWithLink = {
+      ...sharedEvent,
+      link_url: 'https://oki-park.jp',
+    }
+    render(
+      <EventSheet open={true} event={eventWithLink} dayId="d1" tripId="t1" events={[sharedEvent]} onClose={() => {}} />
+    )
+    expect(screen.getByDisplayValue('https://oki-park.jp')).toBeInTheDocument()
+  })
+
+  it('shows existing image preview thumbnail', () => {
+    const eventWithImage = {
+      ...sharedEvent,
+      image_url: 'https://cdn.example.com/existing.jpg',
+    }
+    render(
+      <EventSheet open={true} event={eventWithImage} dayId="d1" tripId="t1" events={[sharedEvent]} onClose={() => {}} />
+    )
+    expect(screen.getByRole('img')).toHaveAttribute('src', 'https://cdn.example.com/existing.jpg')
   })
 })
