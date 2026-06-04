@@ -161,7 +161,7 @@ export function subscribeToEvents(
 export async function createEvent(
   tripId: string,
   dayId: string,
-  event: Omit<TripEvent, 'id'>
+  event: Omit<TripEvent, 'id'> & { id?: string }
 ): Promise<string> {
   const { data, error } = await supabase
     .from('events')
