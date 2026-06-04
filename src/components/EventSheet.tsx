@@ -28,6 +28,7 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [linkUrl, setLinkUrl] = useState('')
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -45,9 +46,17 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
     setLinkUrl(event?.link_url ?? '')
   }, [event, open])
 
-  if (!open) return null
+  useEffect(() => {
+    if (!imageFile) {
+      setPreviewSrc(imageUrl)
+      return
+    }
+    const url = URL.createObjectURL(imageFile)
+    setPreviewSrc(url)
+    return () => URL.revokeObjectURL(url)
+  }, [imageFile, imageUrl])
 
-  const previewSrc = imageFile ? URL.createObjectURL(imageFile) : imageUrl
+  if (!open) return null
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -69,43 +78,15 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
     setSaving(true)
 
     let resolvedImageUrl: string | null = imageUrl
+    let preGeneratedId: string | undefined
 
     if (imageFile) {
-      const uploadId = isEdit ? event.id : crypto.randomUUID()
+      preGeneratedId = isEdit ? event!.id : crypto.randomUUID()
       try {
-        resolvedImageUrl = await uploadEventImage(tripId, uploadId, imageFile)
+        resolvedImageUrl = await uploadEventImage(tripId, preGeneratedId, imageFile)
       } catch {
         alert('圖片上傳失敗，請重試')
-        resolvedImageUrl = isEdit ? (event.image_url ?? null) : null
-      }
-
-      if (!isEdit) {
-        const base = {
-          id: uploadId,
-          type,
-          time_start: timeStart,
-          time_end: timeEnd,
-          sort_order: events.length,
-        }
-        const data: Omit<TripEvent, 'id'> & { id: string } = type === 'shared'
-          ? { ...base, title, location, notes, image_url: resolvedImageUrl, link_url: linkUrl || null }
-          : { ...base, title: '', location: '', notes: '', fork_items: [forkA, forkB], image_url: resolvedImageUrl, link_url: linkUrl || null }
-
-        await createEvent(tripId, dayId, data)
-
-        if (timeStart) {
-          const allEvents: TripEvent[] = [...events, { ...data }]
-          const sorted = [...allEvents].sort((a, b) => {
-            const ta = a.time_start || '\xff'
-            const tb = b.time_start || '\xff'
-            return ta.localeCompare(tb)
-          })
-          await reorderEvents(tripId, dayId, sorted.map((e) => e.id))
-        }
-
-        setSaving(false)
-        onClose()
-        return
+        resolvedImageUrl = isEdit ? (event!.image_url ?? null) : null
       }
     }
 
@@ -113,16 +94,16 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
       type,
       time_start: timeStart,
       time_end: timeEnd,
-      sort_order: isEdit ? event.sort_order : events.length,
+      sort_order: isEdit ? event!.sort_order : events.length,
     }
     const data: Omit<TripEvent, 'id'> = type === 'shared'
       ? { ...base, title, location, notes, image_url: resolvedImageUrl, link_url: linkUrl || null }
       : { ...base, title: '', location: '', notes: '', fork_items: [forkA, forkB], image_url: resolvedImageUrl, link_url: linkUrl || null }
 
     if (isEdit) {
-      await updateEvent(tripId, dayId, event.id, data)
+      await updateEvent(tripId, dayId, event!.id, data)
     } else {
-      const newId = await createEvent(tripId, dayId, data)
+      const newId = await createEvent(tripId, dayId, { ...data, ...(preGeneratedId ? { id: preGeneratedId } : {}) })
       if (timeStart) {
         const allEvents: TripEvent[] = [...events, { ...data, id: newId }]
         const sorted = [...allEvents].sort((a, b) => {

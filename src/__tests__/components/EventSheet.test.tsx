@@ -27,14 +27,14 @@ const sharedEvent: TripEvent = {
 describe('EventSheet', () => {
   it('renders nothing when open=false', () => {
     render(
-      <EventSheet open={false} event={null} dayId="d1" tripId="t1" eventCount={0} onClose={() => {}} />
+      <EventSheet open={false} event={null} dayId="d1" tripId="t1" events={[]} onClose={() => {}} />
     )
     expect(screen.queryByText('共同')).toBeNull()
   })
 
   it('shows create title and empty form when open=true with no event', () => {
     render(
-      <EventSheet open={true} event={null} dayId="d1" tripId="t1" eventCount={0} onClose={() => {}} />
+      <EventSheet open={true} event={null} dayId="d1" tripId="t1" events={[]} onClose={() => {}} />
     )
     expect(screen.getByText('新增行程')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('行程名稱')).toBeInTheDocument()
@@ -42,7 +42,7 @@ describe('EventSheet', () => {
 
   it('shows edit title and pre-fills fields from existing event', () => {
     render(
-      <EventSheet open={true} event={sharedEvent} dayId="d1" tripId="t1" eventCount={1} onClose={() => {}} />
+      <EventSheet open={true} event={sharedEvent} dayId="d1" tripId="t1" events={[sharedEvent]} onClose={() => {}} />
     )
     expect(screen.getByText('編輯行程')).toBeInTheDocument()
     expect(screen.getByDisplayValue('美麗海水族館')).toBeInTheDocument()
@@ -50,7 +50,7 @@ describe('EventSheet', () => {
 
   it('switches to fork mode and shows text inputs when no members provided', () => {
     render(
-      <EventSheet open={true} event={null} dayId="d1" tripId="t1" eventCount={0} onClose={() => {}} />
+      <EventSheet open={true} event={null} dayId="d1" tripId="t1" events={[]} onClose={() => {}} />
     )
     fireEvent.click(screen.getByText('分岔'))
     expect(screen.getByPlaceholderText('人名 A')).toBeInTheDocument()
@@ -63,7 +63,7 @@ describe('EventSheet', () => {
       { email: 'b@test.com', display_name: 'Bob', avatar_url: '' },
     ]
     render(
-      <EventSheet open={true} event={null} dayId="d1" tripId="t1" eventCount={0} members={members} onClose={() => {}} />
+      <EventSheet open={true} event={null} dayId="d1" tripId="t1" events={[]} members={members} onClose={() => {}} />
     )
     fireEvent.click(screen.getByText('分岔'))
     const selects = screen.getAllByRole('combobox')
@@ -75,7 +75,7 @@ describe('EventSheet', () => {
   it('calls onClose when backdrop clicked', () => {
     const onClose = vi.fn()
     render(
-      <EventSheet open={true} event={null} dayId="d1" tripId="t1" eventCount={0} onClose={onClose} />
+      <EventSheet open={true} event={null} dayId="d1" tripId="t1" events={[]} onClose={onClose} />
     )
     fireEvent.click(screen.getByTestId('sheet-backdrop'))
     expect(onClose).toHaveBeenCalledTimes(1)
