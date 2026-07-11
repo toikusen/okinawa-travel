@@ -191,6 +191,18 @@ describe('deleteTrip', () => {
     expect(ok).toBe(true)
   })
 
+  it('still deletes the trip when remove() throws after a successful list', async () => {
+    mockStorageFrom.mockReturnValue({
+      list: vi.fn().mockResolvedValue({ data: [{ name: 'a.jpg' }], error: null }),
+      remove: vi.fn().mockRejectedValue(new Error('remove failed')),
+    })
+    mockRpc.mockResolvedValue({ data: true, error: null })
+
+    const ok = await deleteTrip('t1')
+
+    expect(ok).toBe(true)
+  })
+
   it('returns false when rpc denies (not owner)', async () => {
     mockStorageFrom.mockReturnValue({
       list: vi.fn().mockResolvedValue({ data: [], error: null }),
