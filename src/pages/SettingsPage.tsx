@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useTrip } from '../hooks/useTrip'
-import { updateTripName, removeMember } from '../lib/db'
+import { updateTrip, removeMember } from '../lib/db'
 
 const TRIP_ID_KEY = 'okinawa_trip_id'
 
@@ -23,7 +23,7 @@ export function SettingsPage() {
 
   const handleSaveName = async () => {
     if (!tripId || !nameInput.trim()) return
-    await updateTripName(tripId, nameInput.trim())
+    await updateTrip(tripId, { name: nameInput.trim() })
   }
 
   const handleCopyInvite = async () => {

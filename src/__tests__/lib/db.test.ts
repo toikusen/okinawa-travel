@@ -27,6 +27,9 @@ import {
   joinTrip,
   createEvent,
   reorderEvents,
+  listMyTrips,
+  deleteTrip,
+  updateTrip,
 } from '../../lib/db'
 
 beforeEach(() => {
@@ -126,5 +129,77 @@ describe('reorderEvents', () => {
     expect(mockEq).toHaveBeenCalledWith('id', 'e1')
     expect(mockEq).toHaveBeenCalledWith('id', 'e2')
     expect(mockEq).toHaveBeenCalledWith('id', 'e3')
+  })
+})
+
+describe('listMyTrips', () => {
+  it('selects trips ordered by start_date desc', async () => {
+    const mockOrder = vi.fn().mockResolvedValue({
+      data: [{ id: 't1', name: 'Tokyo', start_date: '2026-08-01', end_date: '2026-08-05', owner_email: 'sei@test.com' }],
+      error: null,
+    })
+    mockFrom.mockReturnValue({ select: vi.fn().mockReturnValue({ order: mockOrder }) })
+
+    const trips = await listMyTrips()
+
+    expect(mockFrom).toHaveBeenCalledWith('trips')
+    expect(mockOrder).toHaveBeenCalledWith('start_date', { ascending: false })
+    expect(trips).toHaveLength(1)
+    expect(trips[0].id).toBe('t1')
+  })
+})
+
+describe('updateTrip', () => {
+  it('updates the given fields on the trip row', async () => {
+    const mockEq = vi.fn().mockResolvedValue({ error: null })
+    const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq })
+    mockFrom.mockReturnValue({ update: mockUpdate })
+
+    await updateTrip('t1', { name: '新名字' })
+
+    expect(mockFrom).toHaveBeenCalledWith('trips')
+    expect(mockUpdate).toHaveBeenCalledWith({ name: '新名字' })
+    expect(mockEq).toHaveBeenCalledWith('id', 't1')
+  })
+})
+
+describe('deleteTrip', () => {
+  it('removes trip images then calls delete_trip_rpc', async () => {
+    const mockList = vi.fn().mockResolvedValue({ data: [{ name: 'a.jpg' }, { name: 'b.png' }], error: null })
+    const mockRemove = vi.fn().mockResolvedValue({ data: null, error: null })
+    mockStorageFrom.mockReturnValue({ list: mockList, remove: mockRemove })
+    mockRpc.mockResolvedValue({ data: true, error: null })
+
+    const ok = await deleteTrip('t1')
+
+    expect(mockStorageFrom).toHaveBeenCalledWith('event-images')
+    expect(mockList).toHaveBeenCalledWith('t1')
+    expect(mockRemove).toHaveBeenCalledWith(['t1/a.jpg', 't1/b.png'])
+    expect(mockRpc).toHaveBeenCalledWith('delete_trip_rpc', { p_trip_id: 't1' })
+    expect(ok).toBe(true)
+  })
+
+  it('still deletes the trip when storage cleanup throws', async () => {
+    mockStorageFrom.mockReturnValue({
+      list: vi.fn().mockRejectedValue(new Error('storage down')),
+      remove: vi.fn(),
+    })
+    mockRpc.mockResolvedValue({ data: true, error: null })
+
+    const ok = await deleteTrip('t1')
+
+    expect(ok).toBe(true)
+  })
+
+  it('returns false when rpc denies (not owner)', async () => {
+    mockStorageFrom.mockReturnValue({
+      list: vi.fn().mockResolvedValue({ data: [], error: null }),
+      remove: vi.fn(),
+    })
+    mockRpc.mockResolvedValue({ data: false, error: null })
+
+    const ok = await deleteTrip('t1')
+
+    expect(ok).toBe(false)
   })
 })

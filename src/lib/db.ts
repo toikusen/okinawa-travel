@@ -97,8 +97,37 @@ export async function removeMember(tripId: string, email: string): Promise<void>
     .eq('user_email', email)
 }
 
-export async function updateTripName(tripId: string, name: string): Promise<void> {
-  await supabase.from('trips').update({ name }).eq('id', tripId)
+export type TripSummary = Pick<Trip, 'id' | 'name' | 'start_date' | 'end_date' | 'owner_email'>
+
+export async function listMyTrips(): Promise<TripSummary[]> {
+  // RLS (trips_read) already restricts rows to trips the caller is a member of
+  const { data, error } = await supabase
+    .from('trips')
+    .select('id, name, start_date, end_date, owner_email')
+    .order('start_date', { ascending: false })
+  if (error) throw new Error(error.message)
+  return (data ?? []) as TripSummary[]
+}
+
+export async function updateTrip(
+  tripId: string,
+  data: Partial<Pick<Trip, 'name' | 'start_date' | 'end_date'>>
+): Promise<void> {
+  await supabase.from('trips').update(data).eq('id', tripId)
+}
+
+export async function deleteTrip(tripId: string): Promise<boolean> {
+  // ponytail: best-effort image cleanup; if it fails we accept orphaned
+  // storage objects rather than blocking deletion (periodic cleanup later)
+  try {
+    const { data: files } = await supabase.storage.from('event-images').list(tripId)
+    if (files?.length) {
+      await supabase.storage.from('event-images').remove(files.map(f => `${tripId}/${f.name}`))
+    }
+  } catch { /* accept orphans */ }
+
+  const { data, error } = await supabase.rpc('delete_trip_rpc', { p_trip_id: tripId })
+  return !error && data === true
 }
 
 // --- Days ---
