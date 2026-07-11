@@ -30,6 +30,8 @@ import {
   listMyTrips,
   deleteTrip,
   updateTrip,
+  dateRange,
+  updateTripDates,
 } from '../../lib/db'
 
 beforeEach(() => {
@@ -213,5 +215,97 @@ describe('deleteTrip', () => {
     const ok = await deleteTrip('t1')
 
     expect(ok).toBe(false)
+  })
+})
+
+describe('dateRange', () => {
+  it('returns inclusive date list', () => {
+    expect(dateRange('2026-08-30', '2026-09-02')).toEqual([
+      '2026-08-30', '2026-08-31', '2026-09-01', '2026-09-02',
+    ])
+  })
+
+  it('returns single date when start equals end', () => {
+    expect(dateRange('2026-08-30', '2026-08-30')).toEqual(['2026-08-30'])
+  })
+})
+
+describe('updateTripDates', () => {
+  function setupDaysMock(opts: {
+    existingDays: { id: string; date: string }[]
+    eventsOnDayIds?: string[]
+  }) {
+    const daysSelectEq = vi.fn().mockResolvedValue({ data: opts.existingDays, error: null })
+    const eventsSelectIn = vi.fn().mockResolvedValue({
+      data: (opts.eventsOnDayIds ?? []).map(day_id => ({ day_id })),
+      error: null,
+    })
+    const daysDeleteIn = vi.fn().mockResolvedValue({ error: null })
+    const daysInsert = vi.fn().mockResolvedValue({ error: null })
+    const daysUpdateEq = vi.fn().mockResolvedValue({ error: null })
+    const tripsUpdateEq = vi.fn().mockResolvedValue({ error: null })
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'days') return {
+        select: vi.fn().mockReturnValue({ eq: daysSelectEq }),
+        delete: vi.fn().mockReturnValue({ in: daysDeleteIn }),
+        insert: daysInsert,
+        update: vi.fn().mockReturnValue({ eq: daysUpdateEq }),
+      }
+      if (table === 'events') return {
+        select: vi.fn().mockReturnValue({ in: eventsSelectIn }),
+      }
+      if (table === 'trips') return {
+        update: vi.fn().mockReturnValue({ eq: tripsUpdateEq }),
+      }
+      return {}
+    })
+
+    return { daysDeleteIn, daysInsert, tripsUpdateEq }
+  }
+
+  it('extends the range by inserting missing days', async () => {
+    const { daysInsert, tripsUpdateEq } = setupDaysMock({
+      existingDays: [{ id: 'd1', date: '2026-08-01' }],
+    })
+
+    const result = await updateTripDates('t1', '2026-08-01', '2026-08-02')
+
+    expect(result.ok).toBe(true)
+    expect(daysInsert).toHaveBeenCalledWith([
+      { trip_id: 't1', date: '2026-08-02', label: '', sort_order: 1 },
+    ])
+    expect(tripsUpdateEq).toHaveBeenCalledWith('id', 't1')
+  })
+
+  it('shrinks the range by deleting empty out-of-range days', async () => {
+    const { daysDeleteIn } = setupDaysMock({
+      existingDays: [
+        { id: 'd1', date: '2026-08-01' },
+        { id: 'd2', date: '2026-08-02' },
+      ],
+    })
+
+    const result = await updateTripDates('t1', '2026-08-01', '2026-08-01')
+
+    expect(result.ok).toBe(true)
+    expect(daysDeleteIn).toHaveBeenCalledWith('id', ['d2'])
+  })
+
+  it('refuses to shrink when a removed day still has events', async () => {
+    const { daysDeleteIn, tripsUpdateEq } = setupDaysMock({
+      existingDays: [
+        { id: 'd1', date: '2026-08-01' },
+        { id: 'd2', date: '2026-08-02' },
+      ],
+      eventsOnDayIds: ['d2'],
+    })
+
+    const result = await updateTripDates('t1', '2026-08-01', '2026-08-01')
+
+    expect(result.ok).toBe(false)
+    expect(result.blockedDates).toEqual(['2026-08-02'])
+    expect(daysDeleteIn).not.toHaveBeenCalled()
+    expect(tripsUpdateEq).not.toHaveBeenCalled()
   })
 })

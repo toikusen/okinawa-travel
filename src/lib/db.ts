@@ -1,6 +1,24 @@
 import { supabase } from '../supabase'
 import type { Trip, TripMember, Day, TripEvent } from '../types'
 
+// --- Helpers ---
+
+export function dateRange(startDate: string, endDate: string): string[] {
+  const [sy, sm, sd] = startDate.split('-').map(Number)
+  const [ey, em, ed] = endDate.split('-').map(Number)
+  const current = new Date(sy, sm - 1, sd)
+  const end = new Date(ey, em - 1, ed)
+  const out: string[] = []
+  while (current <= end) {
+    const y = current.getFullYear()
+    const mo = String(current.getMonth() + 1).padStart(2, '0')
+    const d = String(current.getDate()).padStart(2, '0')
+    out.push(`${y}-${mo}-${d}`)
+    current.setDate(current.getDate() + 1)
+  }
+  return out
+}
+
 // --- Trip ---
 
 export function subscribeToTrip(
@@ -62,19 +80,9 @@ export async function createTrip(
     avatar_url: ownerAvatarUrl,
   })
 
-  const days: { trip_id: string; date: string; label: string; sort_order: number }[] = []
-  const [sy, sm, sd] = startDate.split('-').map(Number)
-  const [ey, em, ed] = endDate.split('-').map(Number)
-  const current = new Date(sy, sm - 1, sd)
-  const end = new Date(ey, em - 1, ed)
-  let sortOrder = 0
-  while (current <= end) {
-    const y = current.getFullYear()
-    const mo = String(current.getMonth() + 1).padStart(2, '0')
-    const d = String(current.getDate()).padStart(2, '0')
-    days.push({ trip_id: tripId, date: `${y}-${mo}-${d}`, label: '', sort_order: sortOrder++ })
-    current.setDate(current.getDate() + 1)
-  }
+  const days = dateRange(startDate, endDate).map((date, i) => ({
+    trip_id: tripId, date, label: '', sort_order: i,
+  }))
   await supabase.from('days').insert(days)
 
   return tripId
@@ -128,6 +136,51 @@ export async function deleteTrip(tripId: string): Promise<boolean> {
 
   const { data, error } = await supabase.rpc('delete_trip_rpc', { p_trip_id: tripId })
   return !error && data === true
+}
+
+export async function updateTripDates(
+  tripId: string,
+  startDate: string,
+  endDate: string
+): Promise<{ ok: boolean; blockedDates?: string[] }> {
+  const { data: existing } = await supabase
+    .from('days').select('id, date').eq('trip_id', tripId)
+  const days = (existing ?? []) as { id: string; date: string }[]
+
+  const wanted = dateRange(startDate, endDate)
+  const wantedSet = new Set(wanted)
+  const toRemove = days.filter(d => !wantedSet.has(d.date))
+
+  if (toRemove.length) {
+    const { data: evts } = await supabase
+      .from('events').select('day_id')
+      .in('day_id', toRemove.map(d => d.id))
+    if (evts?.length) {
+      const blockedIds = new Set((evts as { day_id: string }[]).map(e => e.day_id))
+      return {
+        ok: false,
+        blockedDates: toRemove.filter(d => blockedIds.has(d.id)).map(d => d.date).sort(),
+      }
+    }
+    await supabase.from('days').delete().in('id', toRemove.map(d => d.id))
+  }
+
+  const existingSet = new Set(days.map(d => d.date))
+  const toAdd = wanted.filter(date => !existingSet.has(date))
+  if (toAdd.length) {
+    await supabase.from('days').insert(
+      toAdd.map(date => ({ trip_id: tripId, date, label: '', sort_order: wanted.indexOf(date) }))
+    )
+  }
+
+  // Renumber kept days so sort_order follows date order
+  const kept = days.filter(d => wantedSet.has(d.date))
+  await Promise.all(kept.map(d =>
+    supabase.from('days').update({ sort_order: wanted.indexOf(d.date) }).eq('id', d.id)
+  ))
+
+  await supabase.from('trips').update({ start_date: startDate, end_date: endDate }).eq('id', tripId)
+  return { ok: true }
 }
 
 // --- Days ---
