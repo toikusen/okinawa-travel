@@ -32,6 +32,7 @@ import {
   updateTrip,
   dateRange,
   updateTripDates,
+  removeMember,
 } from '../../lib/db'
 
 beforeEach(() => {
@@ -213,6 +214,36 @@ describe('deleteTrip', () => {
     mockRpc.mockResolvedValue({ data: false, error: null })
 
     const ok = await deleteTrip('t1')
+
+    expect(ok).toBe(false)
+  })
+})
+
+describe('removeMember', () => {
+  it('returns true when a row was deleted', async () => {
+    const mockDelete = vi.fn().mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: null, count: 1 }),
+      }),
+    })
+    mockFrom.mockReturnValue({ delete: mockDelete })
+
+    const ok = await removeMember('t1', 'a@test.com')
+
+    expect(ok).toBe(true)
+    expect(mockFrom).toHaveBeenCalledWith('trip_members')
+    expect(mockDelete).toHaveBeenCalledWith({ count: 'exact' })
+  })
+
+  it('returns false when RLS blocks the delete (0 rows affected)', async () => {
+    const mockDelete = vi.fn().mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: null, count: 0 }),
+      }),
+    })
+    mockFrom.mockReturnValue({ delete: mockDelete })
+
+    const ok = await removeMember('t1', 'a@test.com')
 
     expect(ok).toBe(false)
   })

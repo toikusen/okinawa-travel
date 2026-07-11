@@ -10,15 +10,19 @@ export function NewTripPage() {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [creating, setCreating] = useState(false)
+  const [createError, setCreateError] = useState(false)
 
   const handleCreateTrip = async () => {
     if (!user?.email || !tripName.trim() || !startDate || !endDate || startDate > endDate) return
     setCreating(true)
+    setCreateError(false)
     try {
       const displayName = (user.user_metadata?.full_name as string) ?? user.email ?? ''
       const avatarUrl = (user.user_metadata?.avatar_url as string) ?? ''
       const id = await createTrip(tripName.trim(), user.email, displayName, avatarUrl, startDate, endDate)
       navigate(`/trips/${id}`, { replace: true })
+    } catch {
+      setCreateError(true)
     } finally {
       setCreating(false)
     }
@@ -61,6 +65,7 @@ export function NewTripPage() {
           >
             {creating ? '建立中...' : '建立旅程'}
           </button>
+          {createError && <p className="text-xs text-[#dc2626] text-center">建立失敗,請再試一次</p>}
         </div>
       </main>
     </div>

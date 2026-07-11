@@ -70,4 +70,17 @@ describe('NewTripPage', () => {
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/trips/new-id', { replace: true }))
     expect(mockCreateTrip).toHaveBeenCalledWith('東京', 'sei@test.com', 'Sei', '', '2026-09-01', '2026-09-03')
   })
+
+  it('shows an error when creation fails', async () => {
+    mockCreateTrip.mockRejectedValue(new Error('boom'))
+    renderPage()
+    fireEvent.change(screen.getByPlaceholderText('旅程名稱'), { target: { value: '東京' } })
+    const [start, end] = dateInputs()
+    fireEvent.change(start, { target: { value: '2026-09-01' } })
+    fireEvent.change(end, { target: { value: '2026-09-03' } })
+    fireEvent.click(screen.getByText('建立旅程'))
+
+    expect(await screen.findByText('建立失敗,請再試一次')).toBeInTheDocument()
+    expect(mockNavigate).not.toHaveBeenCalled()
+  })
 })

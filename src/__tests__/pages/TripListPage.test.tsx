@@ -23,6 +23,7 @@ import { TripListPage } from '../../pages/TripListPage'
 
 beforeEach(() => {
   vi.clearAllMocks()
+  localStorage.clear()
 })
 
 function renderPage() {
@@ -64,5 +65,26 @@ describe('TripListPage', () => {
     fireEvent.click(await screen.findByText('+ 新增旅程'))
 
     expect(mockNavigate).toHaveBeenCalledWith('/trips/new')
+  })
+
+  it('falls back to cached trips with an error notice when the fetch fails', async () => {
+    localStorage.setItem('sb_trips_list', JSON.stringify([
+      { id: 't1', name: '快取旅程', start_date: '2026-08-01', end_date: '2026-08-02', owner_email: 'x@test.com' },
+    ]))
+    mockListMyTrips.mockRejectedValue(new Error('offline'))
+
+    renderPage()
+
+    expect(await screen.findByText('快取旅程')).toBeInTheDocument()
+    expect(screen.getByText('無法載入旅程列表,請檢查網路連線')).toBeInTheDocument()
+  })
+
+  it('shows an error notice without the empty state when the fetch fails and there is no cache', async () => {
+    mockListMyTrips.mockRejectedValue(new Error('offline'))
+
+    renderPage()
+
+    expect(await screen.findByText('無法載入旅程列表,請檢查網路連線')).toBeInTheDocument()
+    expect(screen.queryByText('還沒有旅程,建立第一個吧!')).not.toBeInTheDocument()
   })
 })

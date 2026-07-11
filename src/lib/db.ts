@@ -99,10 +99,12 @@ export async function joinTrip(
   return !error && data === true
 }
 
-export async function removeMember(tripId: string, email: string): Promise<void> {
-  await supabase.from('trip_members').delete()
+export async function removeMember(tripId: string, email: string): Promise<boolean> {
+  const { error, count } = await supabase.from('trip_members')
+    .delete({ count: 'exact' })
     .eq('trip_id', tripId)
     .eq('user_email', email)
+  return !error && (count ?? 0) > 0
 }
 
 export type TripSummary = Pick<Trip, 'id' | 'name' | 'start_date' | 'end_date' | 'owner_email'>

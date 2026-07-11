@@ -51,15 +51,18 @@ export function SettingsPage() {
   const handleRemoveMember = async (email: string) => {
     if (!tripId) return
     setRemoving(email)
-    await removeMember(tripId, email)
+    const ok = await removeMember(tripId, email)
     setRemoving(null)
+    if (!ok) window.alert('移除失敗,請再試一次。')
   }
 
   const handleLeave = async () => {
     if (!tripId || !user?.email || !window.confirm('確定要退出這個旅程嗎?')) return
     setBusy(true)
-    await removeMember(tripId, user.email)
-    navigate('/', { replace: true })
+    const ok = await removeMember(tripId, user.email)
+    setBusy(false)
+    if (ok) navigate('/', { replace: true })
+    else window.alert('退出失敗,請再試一次。')
   }
 
   const handleDelete = async () => {

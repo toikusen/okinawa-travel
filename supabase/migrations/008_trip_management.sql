@@ -70,3 +70,14 @@ set owner_email = (
   limit 1
 )
 where t.owner_email is null;
+
+-- Any member could rewrite owner_email via the permissive trips_update
+-- policy (001), subverting the owner-only delete/leave semantics above.
+-- Column-level grants keep member edits to name/dates only.
+revoke update on table trips from anon, authenticated;
+grant update (name, start_date, end_date) on table trips to authenticated;
+
+-- RLS policies call this as definer; clients never need it directly, and
+-- anon holding a trip UUID could resolve the owner's email.
+revoke execute on function public.get_trip_owner_email(uuid) from public, anon;
+grant execute on function public.get_trip_owner_email(uuid) to authenticated;
