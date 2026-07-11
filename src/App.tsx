@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import { LoginPage } from './pages/LoginPage'
 import { TimelinePage } from './pages/TimelinePage'
+import { TripListPage } from './pages/TripListPage'
 import { JoinPage } from './pages/JoinPage'
 import { SettingsPage } from './pages/SettingsPage'
 
@@ -44,7 +45,8 @@ export default function App() {
     <>
       <PendingJoinRedirect />
       <Routes>
-        <Route path="/" element={<TimelinePage />} />
+        <Route path="/" element={<TripListPage />} />
+        <Route path="/trips/:tripId" element={<TimelinePage />} />
         <Route path="/join/:tripId" element={<JoinPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
