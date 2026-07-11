@@ -1,29 +1,43 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useTrip } from '../hooks/useTrip'
-import { updateTrip, removeMember } from '../lib/db'
-
-const TRIP_ID_KEY = 'okinawa_trip_id'
+import { updateTrip, updateTripDates, deleteTrip, removeMember } from '../lib/db'
 
 export function SettingsPage() {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
-  const tripId = localStorage.getItem(TRIP_ID_KEY)
-  const { trip } = useTrip(tripId)
+  const { tripId } = useParams<{ tripId: string }>()
+  const { trip } = useTrip(tripId ?? null)
   const [nameInput, setNameInput] = useState('')
+  const [dates, setDates] = useState({ start: '', end: '' })
+  const [dateError, setDateError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [removing, setRemoving] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     if (trip?.name) setNameInput(trip.name)
   }, [trip?.name])
+
+  useEffect(() => {
+    if (trip) setDates({ start: trip.start_date, end: trip.end_date })
+  }, [trip?.start_date, trip?.end_date])
 
   const isOwner = trip?.owner_email === user?.email
 
   const handleSaveName = async () => {
     if (!tripId || !nameInput.trim()) return
     await updateTrip(tripId, { name: nameInput.trim() })
+  }
+
+  const handleSaveDates = async () => {
+    if (!tripId || !dates.start || !dates.end || dates.start > dates.end) return
+    if (trip && dates.start === trip.start_date && dates.end === trip.end_date) return
+    const result = await updateTripDates(tripId, dates.start, dates.end)
+    if (result.ok) setDateError(null)
+    else if (result.blockedDates) setDateError(`以下日期已有行程,請先清空:${result.blockedDates.join('、')}`)
+    else setDateError('日期更新失敗,請再試一次')
   }
 
   const handleCopyInvite = async () => {
@@ -39,6 +53,22 @@ export function SettingsPage() {
     setRemoving(email)
     await removeMember(tripId, email)
     setRemoving(null)
+  }
+
+  const handleLeave = async () => {
+    if (!tripId || !user?.email || !window.confirm('確定要退出這個旅程嗎?')) return
+    setBusy(true)
+    await removeMember(tripId, user.email)
+    navigate('/', { replace: true })
+  }
+
+  const handleDelete = async () => {
+    if (!tripId || !window.confirm('確定要刪除整個旅程嗎?所有行程與圖片將一併刪除,無法復原。')) return
+    setBusy(true)
+    const ok = await deleteTrip(tripId)
+    setBusy(false)
+    if (ok) navigate('/', { replace: true })
+    else window.alert('刪除失敗,只有主揪可以刪除旅程。')
   }
 
   const handleSignOut = async () => {
@@ -65,6 +95,24 @@ export function SettingsPage() {
             onBlur={handleSaveName}
             onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
           />
+          <p className="text-xs font-semibold text-[#8fa0b0] mt-4 mb-2">旅程日期</p>
+          <div className="flex gap-2">
+            <input
+              type="date"
+              className="flex-1 border border-[#e8edf2] rounded-[8px] px-3 py-2 text-sm text-[#1a2530]"
+              value={dates.start}
+              onChange={(e) => setDates(d => ({ ...d, start: e.target.value }))}
+              onBlur={handleSaveDates}
+            />
+            <input
+              type="date"
+              className="flex-1 border border-[#e8edf2] rounded-[8px] px-3 py-2 text-sm text-[#1a2530]"
+              value={dates.end}
+              onChange={(e) => setDates(d => ({ ...d, end: e.target.value }))}
+              onBlur={handleSaveDates}
+            />
+          </div>
+          {dateError && <p className="text-xs text-[#dc2626] mt-2">{dateError}</p>}
         </section>
 
         <section className="bg-white rounded-[12px] p-4 border border-[#e8edf2]">
@@ -112,6 +160,27 @@ export function SettingsPage() {
           >
             {copied ? '✓ 已複製連結' : '複製邀請連結'}
           </button>
+        </section>
+
+        <section className="bg-white rounded-[12px] p-4 border border-[#e8edf2]">
+          <p className="text-xs font-semibold text-[#8fa0b0] mb-3">危險區</p>
+          {isOwner ? (
+            <button
+              onClick={handleDelete}
+              disabled={busy}
+              className="w-full bg-[#fee2e2] text-[#dc2626] rounded-[8px] py-2.5 text-sm font-semibold disabled:opacity-60"
+            >
+              {busy ? '刪除中...' : '刪除旅程'}
+            </button>
+          ) : (
+            <button
+              onClick={handleLeave}
+              disabled={busy}
+              className="w-full bg-[#fee2e2] text-[#dc2626] rounded-[8px] py-2.5 text-sm font-semibold disabled:opacity-60"
+            >
+              {busy ? '退出中...' : '退出旅程'}
+            </button>
+          )}
         </section>
 
         <section className="bg-white rounded-[12px] p-4 border border-[#e8edf2]">

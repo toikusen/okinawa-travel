@@ -49,8 +49,8 @@ export default function App() {
         <Route path="/" element={<TripListPage />} />
         <Route path="/trips/new" element={<NewTripPage />} />
         <Route path="/trips/:tripId" element={<TimelinePage />} />
+        <Route path="/trips/:tripId/settings" element={<SettingsPage />} />
         <Route path="/join/:tripId" element={<JoinPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>

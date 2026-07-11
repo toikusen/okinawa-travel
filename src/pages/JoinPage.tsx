@@ -2,9 +2,6 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { joinTrip } from '../lib/db'
-import { supabase } from '../supabase'
-
-const TRIP_ID_KEY = 'okinawa_trip_id'
 
 export function JoinPage() {
   const { tripId } = useParams<{ tripId: string }>()
@@ -15,36 +12,11 @@ export function JoinPage() {
   useEffect(() => {
     if (!tripId || !user?.email) return
     const tid = tripId
-    const email = user.email
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      let jwtClaims: Record<string, unknown> = {}
-      try {
-        const b64 = session?.access_token?.split('.')[1]?.replace(/-/g, '+').replace(/_/g, '/')
-        if (b64) jwtClaims = JSON.parse(atob(b64))
-      } catch { /* ignore */ }
-
-      console.log('[JoinPage] session check:', {
-        hasSession: !!session,
-        sessionEmail: session?.user?.email,
-        reactUserEmail: user.email,
-        hasAccessToken: !!session?.access_token,
-        role: session?.user?.role,
-        jwtEmail: jwtClaims['email'],
-        jwtRole: jwtClaims['role'],
-        jwtAud: jwtClaims['aud'],
-      })
-
-      const displayName = (user.user_metadata?.full_name as string) ?? email
-      const avatarUrl = (user.user_metadata?.avatar_url as string) ?? ''
-      joinTrip(tid, email, displayName, avatarUrl).then((success) => {
-        if (success) {
-          localStorage.setItem(TRIP_ID_KEY, tid)
-          navigate('/', { replace: true })
-        } else {
-          setStatus('error')
-        }
-      })
+    const displayName = (user.user_metadata?.full_name as string) ?? user.email
+    const avatarUrl = (user.user_metadata?.avatar_url as string) ?? ''
+    joinTrip(tid, user.email, displayName, avatarUrl).then((success) => {
+      if (success) navigate(`/trips/${tid}`, { replace: true })
+      else setStatus('error')
     })
   }, [tripId, user, navigate])
 
