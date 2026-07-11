@@ -10,8 +10,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: '沖繩旅遊',
-        short_name: '沖繩旅遊',
+        name: 'Tabi',
+        short_name: 'Tabi',
         theme_color: '#0077b6',
         background_color: '#ffffff',
         display: 'standalone',

@@ -7,7 +7,7 @@ export function LoginPage() {
     <div className="min-h-screen flex flex-col items-center justify-center gap-8 bg-[#f0f4f8] px-6">
       <div className="text-center">
         <div className="text-5xl mb-4">🌺</div>
-        <h1 className="text-2xl font-bold text-[#1a2530]">沖繩旅遊</h1>
+        <h1 className="text-2xl font-bold text-[#1a2530]">Tabi</h1>
         <p className="text-[#5a7a8a] mt-2 text-sm">共享行程，一起出發</p>
       </div>
       <button
