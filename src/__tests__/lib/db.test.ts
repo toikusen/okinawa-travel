@@ -234,13 +234,19 @@ describe('updateTripDates', () => {
   function setupDaysMock(opts: {
     existingDays: { id: string; date: string }[]
     eventsOnDayIds?: string[]
+    fetchError?: { message: string }
+    deleteError?: { message: string }
   }) {
-    const daysSelectEq = vi.fn().mockResolvedValue({ data: opts.existingDays, error: null })
+    const daysSelectEq = vi.fn().mockResolvedValue(
+      opts.fetchError ? { data: null, error: opts.fetchError } : { data: opts.existingDays, error: null }
+    )
     const eventsSelectIn = vi.fn().mockResolvedValue({
       data: (opts.eventsOnDayIds ?? []).map(day_id => ({ day_id })),
       error: null,
     })
-    const daysDeleteIn = vi.fn().mockResolvedValue({ error: null })
+    const daysDeleteIn = vi.fn().mockResolvedValue(
+      opts.deleteError ? { error: opts.deleteError } : { error: null }
+    )
     const daysInsert = vi.fn().mockResolvedValue({ error: null })
     const daysUpdateEq = vi.fn().mockResolvedValue({ error: null })
     const tripsUpdateEq = vi.fn().mockResolvedValue({ error: null })
@@ -306,6 +312,43 @@ describe('updateTripDates', () => {
     expect(result.ok).toBe(false)
     expect(result.blockedDates).toEqual(['2026-08-02'])
     expect(daysDeleteIn).not.toHaveBeenCalled()
+    expect(tripsUpdateEq).not.toHaveBeenCalled()
+  })
+
+  it('returns INVALID_RANGE without touching the db when start > end', async () => {
+    const result = await updateTripDates('t1', '2026-08-02', '2026-08-01')
+
+    expect(result).toEqual({ ok: false, error: 'INVALID_RANGE' })
+    expect(mockFrom).not.toHaveBeenCalled()
+  })
+
+  it('returns ok:false when the initial days fetch errors', async () => {
+    const { daysInsert, daysDeleteIn, tripsUpdateEq } = setupDaysMock({
+      existingDays: [],
+      fetchError: { message: 'boom' },
+    })
+
+    const result = await updateTripDates('t1', '2026-08-01', '2026-08-02')
+
+    expect(result).toEqual({ ok: false, error: 'boom' })
+    expect(daysInsert).not.toHaveBeenCalled()
+    expect(daysDeleteIn).not.toHaveBeenCalled()
+    expect(tripsUpdateEq).not.toHaveBeenCalled()
+  })
+
+  it('returns ok:false and stops when the delete errors', async () => {
+    const { daysInsert, tripsUpdateEq } = setupDaysMock({
+      existingDays: [
+        { id: 'd1', date: '2026-08-01' },
+        { id: 'd2', date: '2026-08-02' },
+      ],
+      deleteError: { message: 'nope' },
+    })
+
+    const result = await updateTripDates('t1', '2026-08-01', '2026-08-01')
+
+    expect(result).toEqual({ ok: false, error: 'nope' })
+    expect(daysInsert).not.toHaveBeenCalled()
     expect(tripsUpdateEq).not.toHaveBeenCalled()
   })
 })

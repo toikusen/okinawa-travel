@@ -142,9 +142,12 @@ export async function updateTripDates(
   tripId: string,
   startDate: string,
   endDate: string
-): Promise<{ ok: boolean; blockedDates?: string[] }> {
-  const { data: existing } = await supabase
+): Promise<{ ok: boolean; blockedDates?: string[]; error?: string }> {
+  if (!startDate || !endDate || startDate > endDate) return { ok: false, error: 'INVALID_RANGE' }
+
+  const { data: existing, error: fetchError } = await supabase
     .from('days').select('id, date').eq('trip_id', tripId)
+  if (fetchError) return { ok: false, error: fetchError.message }
   const days = (existing ?? []) as { id: string; date: string }[]
 
   const wanted = dateRange(startDate, endDate)
@@ -152,9 +155,10 @@ export async function updateTripDates(
   const toRemove = days.filter(d => !wantedSet.has(d.date))
 
   if (toRemove.length) {
-    const { data: evts } = await supabase
+    const { data: evts, error: evtsError } = await supabase
       .from('events').select('day_id')
       .in('day_id', toRemove.map(d => d.id))
+    if (evtsError) return { ok: false, error: evtsError.message }
     if (evts?.length) {
       const blockedIds = new Set((evts as { day_id: string }[]).map(e => e.day_id))
       return {
@@ -162,24 +166,30 @@ export async function updateTripDates(
         blockedDates: toRemove.filter(d => blockedIds.has(d.id)).map(d => d.date).sort(),
       }
     }
-    await supabase.from('days').delete().in('id', toRemove.map(d => d.id))
+    const { error: deleteError } = await supabase.from('days').delete().in('id', toRemove.map(d => d.id))
+    if (deleteError) return { ok: false, error: deleteError.message }
   }
 
   const existingSet = new Set(days.map(d => d.date))
   const toAdd = wanted.filter(date => !existingSet.has(date))
   if (toAdd.length) {
-    await supabase.from('days').insert(
+    const { error: insertError } = await supabase.from('days').insert(
       toAdd.map(date => ({ trip_id: tripId, date, label: '', sort_order: wanted.indexOf(date) }))
     )
+    if (insertError) return { ok: false, error: insertError.message }
   }
 
   // Renumber kept days so sort_order follows date order
   const kept = days.filter(d => wantedSet.has(d.date))
-  await Promise.all(kept.map(d =>
+  const renumberResults = await Promise.all(kept.map(d =>
     supabase.from('days').update({ sort_order: wanted.indexOf(d.date) }).eq('id', d.id)
   ))
+  const renumberError = renumberResults.find(r => r.error)?.error
+  if (renumberError) return { ok: false, error: renumberError.message }
 
-  await supabase.from('trips').update({ start_date: startDate, end_date: endDate }).eq('id', tripId)
+  const { error: tripError } = await supabase
+    .from('trips').update({ start_date: startDate, end_date: endDate }).eq('id', tripId)
+  if (tripError) return { ok: false, error: tripError.message }
   return { ok: true }
 }
 
