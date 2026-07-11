@@ -1,13 +1,15 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { mockFrom, mockChannel } = vi.hoisted(() => {
+const { mockFrom, mockChannel, mockRpc, mockStorageFrom } = vi.hoisted(() => {
   const mockFrom = vi.fn()
   const mockChannel = vi.fn(() => ({
     on: vi.fn().mockReturnThis(),
     subscribe: vi.fn(),
   }))
-  return { mockFrom, mockChannel }
+  const mockRpc = vi.fn()
+  const mockStorageFrom = vi.fn()
+  return { mockFrom, mockChannel, mockRpc, mockStorageFrom }
 })
 
 vi.mock('../../supabase', () => ({
@@ -15,6 +17,8 @@ vi.mock('../../supabase', () => ({
     from: mockFrom,
     channel: mockChannel,
     removeChannel: vi.fn(),
+    rpc: mockRpc,
+    storage: { from: mockStorageFrom },
   },
 }))
 
@@ -62,20 +66,23 @@ describe('createTrip', () => {
 })
 
 describe('joinTrip', () => {
-  it('returns false when insert fails (RLS blocks)', async () => {
-    mockFrom.mockReturnValue({
-      insert: vi.fn().mockResolvedValue({ error: { message: 'violates row-level security' } }),
-    })
+  it('returns true when join_trip_rpc succeeds', async () => {
+    mockRpc.mockResolvedValue({ data: true, error: null })
+    const result = await joinTrip('trip-id', 'user@test.com', 'User', '')
+    expect(mockRpc).toHaveBeenCalledWith('join_trip_rpc', { p_trip_id: 'trip-id' })
+    expect(result).toBe(true)
+  })
+
+  it('returns false when the rpc errors', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: { message: 'boom' } })
     const result = await joinTrip('bad-trip-id', 'user@test.com', 'User', '')
     expect(result).toBe(false)
   })
 
-  it('returns true on successful insert', async () => {
-    mockFrom.mockReturnValue({
-      insert: vi.fn().mockResolvedValue({ error: null }),
-    })
-    const result = await joinTrip('trip-id', 'user@test.com', 'User', '')
-    expect(result).toBe(true)
+  it('returns false when the rpc reports failure (trip not found)', async () => {
+    mockRpc.mockResolvedValue({ data: false, error: null })
+    const result = await joinTrip('missing-trip', 'user@test.com', 'User', '')
+    expect(result).toBe(false)
   })
 })
 
