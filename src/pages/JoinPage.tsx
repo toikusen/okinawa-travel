@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { joinTrip, getTripPreview, type TripPreview } from '../lib/db'
-import { fmtMD, dayCount } from '../lib/dates'
+import { fmtRange, dayCount } from '../lib/dates'
 import { AvatarStack } from '../components/AvatarStack'
 
 export function JoinPage() {
@@ -67,7 +67,7 @@ export function JoinPage() {
       <div className="w-full max-w-sm bg-white rounded-[14px] border border-[#e8edf2] p-5 flex flex-col gap-3">
         <p className="text-lg font-bold text-[#1a2530]">{preview.name}</p>
         <p className="text-xs text-[#52707f]">
-          {fmtMD(preview.start_date)} – {fmtMD(preview.end_date)} · {dayCount(preview.start_date, preview.end_date)} 天
+          {fmtRange(preview.start_date, preview.end_date)} · {dayCount(preview.start_date, preview.end_date)} 天
         </p>
         {preview.members.length > 0 && (
           <div className="flex items-center gap-1.5">

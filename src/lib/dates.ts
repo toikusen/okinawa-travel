@@ -16,6 +16,18 @@ export function fmtChip(dateStr: string): string {
   return `${d.getMonth() + 1}/${d.getDate()} ${WEEKDAYS[d.getDay()]}`
 }
 
+/** Date range; year shown only when it disambiguates:
+ *  current year:  '10/12 (一) – 10/15 (四)'
+ *  other year:    '2027/10/12 (一) – 10/15 (四)'
+ *  cross-year:    '12/30 (三) – 2027/1/2 (六)' */
+export function fmtRange(start: string, end: string, today = todayStr()): string {
+  const startYear = start.slice(0, 4)
+  const endYear = end.slice(0, 4)
+  const s = (startYear !== today.slice(0, 4) ? startYear + '/' : '') + fmtMD(start)
+  const e = (endYear !== startYear ? endYear + '/' : '') + fmtMD(end)
+  return `${s} – ${e}`
+}
+
 /** Local today as 'YYYY-MM-DD' */
 export function todayStr(now = new Date()): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`

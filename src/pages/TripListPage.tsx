@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { listMyTrips, type TripSummary } from '../lib/db'
-import { fmtMD, dayCount, tripStatus, daysUntil } from '../lib/dates'
+import { fmtRange, dayCount, tripStatus, daysUntil } from '../lib/dates'
 import { AvatarStack } from '../components/AvatarStack'
 import { InstallPrompt } from '../components/InstallPrompt'
 import { Logo } from '../components/Logo'
@@ -45,7 +45,7 @@ function TripCard({ trip, onClick }: { trip: TripSummary; onClick: () => void })
           )}
         </div>
         <p className="text-xs text-[#52707f] mt-1">
-          {fmtMD(trip.start_date)} – {fmtMD(trip.end_date)} · {dayCount(trip.start_date, trip.end_date)} 天
+          {fmtRange(trip.start_date, trip.end_date)} · {dayCount(trip.start_date, trip.end_date)} 天
         </p>
         {!ended && trip.members.length > 0 && (
           <div className="flex items-center gap-1.5 mt-2">
