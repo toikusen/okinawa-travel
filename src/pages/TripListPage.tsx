@@ -5,6 +5,7 @@ import { listMyTrips, type TripSummary } from '../lib/db'
 import { fmtMD, dayCount, tripStatus, daysUntil } from '../lib/dates'
 import { AvatarStack } from '../components/AvatarStack'
 import { InstallPrompt } from '../components/InstallPrompt'
+import { Logo } from '../components/Logo'
 
 const TRIPS_CACHE = 'sb_trips_list'
 
@@ -99,7 +100,7 @@ export function TripListPage() {
 
         {trips?.length === 0 && !loadError && (
           <div className="flex flex-col items-center gap-2 py-12">
-            <div className="text-4xl">🌺</div>
+            <Logo size={44} />
             <p className="text-sm text-[#52707f]">還沒有旅程,建立第一個吧!</p>
           </div>
         )}

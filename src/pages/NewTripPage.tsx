@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { createTrip } from '../lib/db'
+import { Logo } from '../components/Logo'
 
 export function NewTripPage() {
   const { user } = useAuth()
@@ -39,12 +40,17 @@ export function NewTripPage() {
   return (
     <div className="min-h-screen bg-[#f0f4f8] flex flex-col max-w-lg mx-auto">
       <header className="bg-white border-b border-[#e8edf2] px-4 py-3 flex items-center gap-3 sticky top-0">
-        <button onClick={() => navigate('/')} className="text-[#0077b6] text-sm">← 返回</button>
+        <button onClick={() => navigate('/')} className="text-[#0077b6] text-sm flex items-center gap-0.5">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+            <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          返回
+        </button>
         <h1 className="text-base font-bold text-[#1a2530]">新增旅程</h1>
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center px-6 gap-4">
-        <div className="text-4xl">🌺</div>
+        <Logo size={44} />
         <div className="w-full max-w-sm flex flex-col gap-3">
           <input
             aria-label="旅程名稱"
