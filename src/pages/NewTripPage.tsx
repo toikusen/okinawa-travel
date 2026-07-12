@@ -12,8 +12,16 @@ export function NewTripPage() {
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState(false)
 
+  const disabledReason = !tripName.trim()
+    ? '請輸入旅程名稱'
+    : !startDate || !endDate
+      ? '請選擇開始與結束日期'
+      : startDate > endDate
+        ? '結束日期需晚於開始日期'
+        : null
+
   const handleCreateTrip = async () => {
-    if (!user?.email || !tripName.trim() || !startDate || !endDate || startDate > endDate) return
+    if (!user?.email || disabledReason) return
     setCreating(true)
     setCreateError(false)
     try {
@@ -39,6 +47,7 @@ export function NewTripPage() {
         <div className="text-4xl">🌺</div>
         <div className="w-full max-w-sm flex flex-col gap-3">
           <input
+            aria-label="旅程名稱"
             className="border border-[#e8edf2] rounded-[10px] px-3 py-2.5 text-sm bg-white text-[#1a2530]"
             placeholder="旅程名稱"
             value={tripName}
@@ -47,12 +56,15 @@ export function NewTripPage() {
           <div className="flex gap-2">
             <input
               type="date"
+              aria-label="開始日期"
               className="flex-1 border border-[#e8edf2] rounded-[10px] px-3 py-2.5 text-sm bg-white text-[#1a2530]"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
             />
             <input
               type="date"
+              aria-label="結束日期"
+              min={startDate || undefined}
               className="flex-1 border border-[#e8edf2] rounded-[10px] px-3 py-2.5 text-sm bg-white text-[#1a2530]"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
@@ -60,11 +72,12 @@ export function NewTripPage() {
           </div>
           <button
             onClick={handleCreateTrip}
-            disabled={creating || !tripName.trim() || !startDate || !endDate || startDate > endDate}
+            disabled={creating || !!disabledReason}
             className="bg-[#0077b6] text-white rounded-[10px] py-3 text-sm font-semibold disabled:opacity-60"
           >
             {creating ? '建立中...' : '建立旅程'}
           </button>
+          {disabledReason && <p className="text-xs text-[#52707f] text-center">{disabledReason}</p>}
           {createError && <p className="text-xs text-[#dc2626] text-center">建立失敗,請再試一次</p>}
         </div>
       </main>

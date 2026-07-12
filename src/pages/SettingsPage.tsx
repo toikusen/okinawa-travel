@@ -1,8 +1,20 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useTrip } from '../hooks/useTrip'
 import { updateTrip, updateTripDates, deleteTrip, removeMember } from '../lib/db'
+import { MembersSection } from '../components/MembersSection'
+
+function SavedBadge() {
+  return (
+    <span className="flex items-center gap-1 text-[11px] font-semibold text-[#22c55e]">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M20 6L9 17l-5-5" />
+      </svg>
+      已儲存
+    </span>
+  )
+}
 
 export function SettingsPage() {
   const { user, signOut } = useAuth()
@@ -12,9 +24,9 @@ export function SettingsPage() {
   const [nameInput, setNameInput] = useState('')
   const [dates, setDates] = useState({ start: '', end: '' })
   const [dateError, setDateError] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
-  const [removing, setRemoving] = useState<string | null>(null)
+  const [saved, setSaved] = useState<'name' | 'dates' | null>(null)
   const [busy, setBusy] = useState(false)
+  const savedTimer = useRef<ReturnType<typeof setTimeout>>()
 
   useEffect(() => {
     if (trip?.name) setNameInput(trip.name)
@@ -24,54 +36,74 @@ export function SettingsPage() {
     if (trip) setDates({ start: trip.start_date, end: trip.end_date })
   }, [trip?.start_date, trip?.end_date])
 
+  useEffect(() => () => clearTimeout(savedTimer.current), [])
+
   const isOwner = trip?.owner_email === user?.email
 
+  const flashSaved = (what: 'name' | 'dates') => {
+    setSaved(what)
+    clearTimeout(savedTimer.current)
+    savedTimer.current = setTimeout(() => setSaved(null), 2000)
+  }
+
   const handleSaveName = async () => {
-    if (!tripId || !nameInput.trim()) return
-    await updateTrip(tripId, { name: nameInput.trim() })
+    if (!tripId || !nameInput.trim() || nameInput.trim() === trip?.name) return
+    try {
+      await updateTrip(tripId, { name: nameInput.trim() })
+      flashSaved('name')
+    } catch {
+      window.alert('名稱儲存失敗,請再試一次。')
+    }
   }
 
   const handleSaveDates = async () => {
     if (!tripId || !dates.start || !dates.end || dates.start > dates.end) return
     if (trip && dates.start === trip.start_date && dates.end === trip.end_date) return
-    const result = await updateTripDates(tripId, dates.start, dates.end)
-    if (result.ok) setDateError(null)
-    else if (result.blockedDates) setDateError(`以下日期已有行程,請先清空:${result.blockedDates.join('、')}`)
-    else setDateError('日期更新失敗,請再試一次')
-  }
-
-  const handleCopyInvite = async () => {
-    if (!tripId) return
-    const url = `${window.location.origin}/join/${tripId}`
-    await navigator.clipboard.writeText(url)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  const handleRemoveMember = async (email: string) => {
-    if (!tripId) return
-    setRemoving(email)
-    const ok = await removeMember(tripId, email)
-    setRemoving(null)
-    if (!ok) window.alert('移除失敗,請再試一次。')
+    try {
+      const result = await updateTripDates(tripId, dates.start, dates.end)
+      if (result.ok) {
+        setDateError(null)
+        flashSaved('dates')
+      }
+      else if (result.blockedDates) setDateError(`以下日期已有行程,請先清空:${result.blockedDates.join('、')}`)
+      else setDateError('日期更新失敗,請再試一次')
+    } catch {
+      setDateError('日期更新失敗,請再試一次')
+    }
   }
 
   const handleLeave = async () => {
     if (!tripId || !user?.email || !window.confirm('確定要退出這個旅程嗎?')) return
     setBusy(true)
-    const ok = await removeMember(tripId, user.email)
-    setBusy(false)
-    if (ok) navigate('/', { replace: true })
-    else window.alert('退出失敗,請再試一次。')
+    try {
+      const ok = await removeMember(tripId, user.email)
+      if (ok) navigate('/', { replace: true })
+      else window.alert('退出失敗,請再試一次。')
+    } catch {
+      window.alert('退出失敗,請再試一次。')
+    } finally {
+      setBusy(false)
+    }
   }
 
   const handleDelete = async () => {
-    if (!tripId || !window.confirm('確定要刪除整個旅程嗎?所有行程與圖片將一併刪除,無法復原。')) return
+    if (!tripId || !trip) return
+    const typed = window.prompt(`此動作無法復原,所有行程與圖片將一併刪除。\n請輸入旅程名稱「${trip.name}」以確認刪除:`)
+    if (typed === null) return
+    if (typed.trim() !== trip.name) {
+      window.alert('名稱不符,已取消刪除。')
+      return
+    }
     setBusy(true)
-    const ok = await deleteTrip(tripId)
-    setBusy(false)
-    if (ok) navigate('/', { replace: true })
-    else window.alert('刪除失敗,只有主揪可以刪除旅程。')
+    try {
+      const ok = await deleteTrip(tripId)
+      if (ok) navigate('/', { replace: true })
+      else window.alert('刪除失敗,只有主揪可以刪除旅程。')
+    } catch {
+      window.alert('刪除失敗,請再試一次。')
+    } finally {
+      setBusy(false)
+    }
   }
 
   const handleSignOut = async () => {
@@ -81,27 +113,37 @@ export function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-[#f0f4f8] flex flex-col max-w-lg mx-auto">
-      <header className="bg-white border-b border-[#e8edf2] px-4 py-3 flex items-center gap-3 sticky top-0">
-        <button onClick={() => navigate(-1)} className="text-[#0077b6] text-sm">
-          ← 返回
+      <header className="bg-white border-b border-[#e8edf2] px-4 py-3 flex items-center gap-3 sticky top-0 z-10">
+        <button onClick={() => navigate(-1)} className="text-[#0077b6] -ml-2 w-11 h-11 -my-1.5 flex items-center justify-center" aria-label="返回">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
         </button>
         <h1 className="text-base font-bold text-[#1a2530]">設定</h1>
       </header>
 
       <main className="px-4 py-6 flex flex-col gap-4">
         <section className="bg-white rounded-[12px] p-4 border border-[#e8edf2]">
-          <p className="text-xs font-semibold text-[#8fa0b0] mb-2">旅程名稱</p>
+          <div className="flex items-center justify-between mb-2">
+            <label htmlFor="trip-name" className="text-xs font-semibold text-[#52707f]">旅程名稱</label>
+            {saved === 'name' && <SavedBadge />}
+          </div>
           <input
+            id="trip-name"
             className="w-full border border-[#e8edf2] rounded-[8px] px-3 py-2 text-sm text-[#1a2530]"
             value={nameInput}
             onChange={(e) => setNameInput(e.target.value)}
             onBlur={handleSaveName}
             onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
           />
-          <p className="text-xs font-semibold text-[#8fa0b0] mt-4 mb-2">旅程日期</p>
+          <div className="flex items-center justify-between mt-4 mb-2">
+            <p className="text-xs font-semibold text-[#52707f]">旅程日期</p>
+            {saved === 'dates' && <SavedBadge />}
+          </div>
           <div className="flex gap-2">
             <input
               type="date"
+              aria-label="開始日期"
               className="flex-1 border border-[#e8edf2] rounded-[8px] px-3 py-2 text-sm text-[#1a2530]"
               value={dates.start}
               onChange={(e) => setDates(d => ({ ...d, start: e.target.value }))}
@@ -109,6 +151,8 @@ export function SettingsPage() {
             />
             <input
               type="date"
+              aria-label="結束日期"
+              min={dates.start || undefined}
               className="flex-1 border border-[#e8edf2] rounded-[8px] px-3 py-2 text-sm text-[#1a2530]"
               value={dates.end}
               onChange={(e) => setDates(d => ({ ...d, end: e.target.value }))}
@@ -118,63 +162,37 @@ export function SettingsPage() {
           {dateError && <p className="text-xs text-[#dc2626] mt-2">{dateError}</p>}
         </section>
 
+        {trip && <MembersSection trip={trip} currentEmail={user?.email} />}
+
         <section className="bg-white rounded-[12px] p-4 border border-[#e8edf2]">
-          <p className="text-xs font-semibold text-[#8fa0b0] mb-3">
-            旅伴 {trip ? `(${trip.members.length})` : ''}
-          </p>
-          <div className="flex flex-col gap-3 mb-3">
-            {trip?.members.map((member) => (
-              <div key={member.email} className="flex items-center gap-3">
-                {member.avatar_url ? (
-                  <img src={member.avatar_url} alt="" className="w-8 h-8 rounded-full shrink-0" />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-[#e8edf2] flex items-center justify-center shrink-0">
-                    <span className="text-xs font-semibold text-[#5a7a8a]">
-                      {(member.display_name || member.email).charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-[#1a2530] truncate">
-                    {member.display_name || member.email}
-                  </p>
-                  {member.display_name && (
-                    <p className="text-[11px] text-[#8fa0b0] truncate">{member.email}</p>
-                  )}
-                  {trip.owner_email === member.email && (
-                    <p className="text-[10px] text-[#0077b6] font-semibold">主揪</p>
-                  )}
-                </div>
-                {isOwner && member.email !== user?.email && (
-                  <button
-                    onClick={() => handleRemoveMember(member.email)}
-                    disabled={removing === member.email}
-                    className="text-[#dc2626] text-xs font-semibold shrink-0 disabled:opacity-40"
-                  >
-                    {removing === member.email ? '移除中' : '移除'}
-                  </button>
-                )}
-              </div>
-            ))}
+          <p className="text-xs font-semibold text-[#52707f] mb-3">帳號</p>
+          <div className="flex items-center gap-3 mb-4">
+            {user?.user_metadata?.avatar_url && (
+              <img src={user.user_metadata.avatar_url as string} alt="" className="w-8 h-8 rounded-full" />
+            )}
+            <p className="text-sm text-[#1a2530]">{user?.user_metadata?.full_name as string}</p>
           </div>
           <button
-            onClick={handleCopyInvite}
-            className="w-full bg-[#f0f4f8] text-[#0077b6] rounded-[8px] py-2.5 text-sm font-semibold active:opacity-70"
+            onClick={handleSignOut}
+            className="w-full border border-[#e8edf2] bg-white text-[#5a7a8a] rounded-[8px] py-2.5 text-sm font-semibold active:opacity-70"
           >
-            {copied ? '✓ 已複製連結' : '複製邀請連結'}
+            登出
           </button>
         </section>
 
-        <section className="bg-white rounded-[12px] p-4 border border-[#e8edf2]">
-          <p className="text-xs font-semibold text-[#8fa0b0] mb-3">危險區</p>
+        <section className="bg-white rounded-[12px] p-4 border border-[#fecaca]">
+          <p className="text-xs font-semibold text-[#dc2626] mb-3">危險區</p>
           {isOwner ? (
-            <button
-              onClick={handleDelete}
-              disabled={busy}
-              className="w-full bg-[#fee2e2] text-[#dc2626] rounded-[8px] py-2.5 text-sm font-semibold disabled:opacity-60"
-            >
-              {busy ? '刪除中...' : '刪除旅程'}
-            </button>
+            <>
+              <button
+                onClick={handleDelete}
+                disabled={busy}
+                className="w-full bg-[#fee2e2] text-[#dc2626] rounded-[8px] py-2.5 text-sm font-semibold disabled:opacity-60"
+              >
+                {busy ? '刪除中...' : '刪除旅程'}
+              </button>
+              <p className="text-[11px] text-[#52707f] mt-2">刪除前需輸入旅程名稱確認,所有行程與圖片將一併刪除。</p>
+            </>
           ) : (
             <button
               onClick={handleLeave}
@@ -184,22 +202,6 @@ export function SettingsPage() {
               {busy ? '退出中...' : '退出旅程'}
             </button>
           )}
-        </section>
-
-        <section className="bg-white rounded-[12px] p-4 border border-[#e8edf2]">
-          <p className="text-xs font-semibold text-[#8fa0b0] mb-3">帳號</p>
-          <div className="flex items-center gap-3 mb-4">
-            {user?.user_metadata?.avatar_url && (
-              <img src={user.user_metadata.avatar_url as string} alt="" className="w-8 h-8 rounded-full" />
-            )}
-            <p className="text-sm text-[#1a2530]">{user?.user_metadata?.full_name as string}</p>
-          </div>
-          <button
-            onClick={handleSignOut}
-            className="w-full bg-[#fee2e2] text-[#dc2626] rounded-[8px] py-2.5 text-sm font-semibold"
-          >
-            登出
-          </button>
         </section>
       </main>
     </div>

@@ -20,11 +20,23 @@ vi.mock('../../hooks/useAuth', () => ({
 vi.mock('../../components/InstallPrompt', () => ({ InstallPrompt: () => null }))
 
 import { TripListPage } from '../../pages/TripListPage'
+import { todayStr } from '../../lib/dates'
 
 beforeEach(() => {
   vi.clearAllMocks()
   localStorage.clear()
 })
+
+function futureDate(daysFromNow: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() + daysFromNow)
+  return todayStr(d)
+}
+
+const members = [
+  { email: 'sei@test.com', display_name: '小安', avatar_url: '' },
+  { email: 'b@test.com', display_name: '阿傑', avatar_url: '' },
+]
 
 function renderPage() {
   return render(
@@ -37,8 +49,8 @@ function renderPage() {
 describe('TripListPage', () => {
   it('renders trips and navigates to the trip on tap', async () => {
     mockListMyTrips.mockResolvedValue([
-      { id: 't1', name: '沖繩 2026', start_date: '2026-08-01', end_date: '2026-08-05', owner_email: 'sei@test.com' },
-      { id: 't2', name: '東京跨年', start_date: '2026-12-30', end_date: '2027-01-02', owner_email: 'other@test.com' },
+      { id: 't1', name: '沖繩 2026', start_date: futureDate(10), end_date: futureDate(14), owner_email: 'sei@test.com', members },
+      { id: 't2', name: '東京跨年', start_date: futureDate(170), end_date: futureDate(173), owner_email: 'other@test.com', members: [] },
     ])
 
     renderPage()
@@ -50,6 +62,21 @@ describe('TripListPage', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/trips/t1')
   })
 
+  it('shows countdown badge, companion count, and groups ended trips', async () => {
+    mockListMyTrips.mockResolvedValue([
+      { id: 't1', name: '沖繩 2026', start_date: futureDate(10), end_date: futureDate(14), owner_email: 'sei@test.com', members },
+      { id: 't2', name: '進行中旅程', start_date: futureDate(-1), end_date: futureDate(1), owner_email: 'sei@test.com', members },
+      { id: 't3', name: '舊旅程', start_date: futureDate(-20), end_date: futureDate(-18), owner_email: 'sei@test.com', members },
+    ])
+
+    renderPage()
+
+    expect(await screen.findByText('D-10')).toBeInTheDocument()
+    expect(screen.getByText('進行中')).toBeInTheDocument()
+    expect(screen.getByText('已結束')).toBeInTheDocument()
+    expect(screen.getAllByText('2 位旅伴')).toHaveLength(2) // ended trips hide companions
+  })
+
   it('shows empty state when there are no trips', async () => {
     mockListMyTrips.mockResolvedValue([])
 
@@ -58,11 +85,11 @@ describe('TripListPage', () => {
     expect(await screen.findByText('還沒有旅程,建立第一個吧!')).toBeInTheDocument()
   })
 
-  it('navigates to /trips/new from the create button', async () => {
+  it('navigates to /trips/new from the floating create button', async () => {
     mockListMyTrips.mockResolvedValue([])
 
     renderPage()
-    fireEvent.click(await screen.findByText('+ 新增旅程'))
+    fireEvent.click(await screen.findByLabelText('新增旅程'))
 
     expect(mockNavigate).toHaveBeenCalledWith('/trips/new')
   })

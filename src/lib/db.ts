@@ -88,12 +88,7 @@ export async function createTrip(
   return tripId
 }
 
-export async function joinTrip(
-  tripId: string,
-  _email: string,
-  _displayName: string,
-  _avatarUrl: string
-): Promise<boolean> {
+export async function joinTrip(tripId: string): Promise<boolean> {
   const { data, error } = await supabase.rpc('join_trip_rpc', { p_trip_id: tripId })
   if (error) console.error('[joinTrip] rpc failed:', error)
   return !error && data === true
@@ -107,16 +102,42 @@ export async function removeMember(tripId: string, email: string): Promise<boole
   return !error && (count ?? 0) > 0
 }
 
-export type TripSummary = Pick<Trip, 'id' | 'name' | 'start_date' | 'end_date' | 'owner_email'>
+export type TripSummary = Pick<Trip, 'id' | 'name' | 'start_date' | 'end_date' | 'owner_email'> & {
+  members: TripMember[]
+}
 
 export async function listMyTrips(): Promise<TripSummary[]> {
   // RLS (trips_read) already restricts rows to trips the caller is a member of
   const { data, error } = await supabase
     .from('trips')
-    .select('id, name, start_date, end_date, owner_email')
+    .select('id, name, start_date, end_date, owner_email, trip_members(user_email, display_name, avatar_url)')
     .order('start_date', { ascending: false })
   if (error) throw new Error(error.message)
-  return (data ?? []) as TripSummary[]
+  return (data ?? []).map((t: Record<string, unknown>) => ({
+    id: t.id as string,
+    name: t.name as string,
+    start_date: t.start_date as string,
+    end_date: t.end_date as string,
+    owner_email: (t.owner_email as string) ?? '',
+    members: ((t.trip_members ?? []) as { user_email: string; display_name: string; avatar_url: string }[]).map(m => ({
+      email: m.user_email,
+      display_name: m.display_name,
+      avatar_url: m.avatar_url,
+    })),
+  }))
+}
+
+export interface TripPreview {
+  name: string
+  start_date: string
+  end_date: string
+  members: Pick<TripMember, 'display_name' | 'avatar_url'>[]
+}
+
+export async function getTripPreview(tripId: string): Promise<TripPreview | null> {
+  const { data, error } = await supabase.rpc('trip_preview_rpc', { p_trip_id: tripId })
+  if (error || !data) return null
+  return data as TripPreview
 }
 
 export async function updateTrip(

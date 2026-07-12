@@ -74,20 +74,20 @@ describe('createTrip', () => {
 describe('joinTrip', () => {
   it('returns true when join_trip_rpc succeeds', async () => {
     mockRpc.mockResolvedValue({ data: true, error: null })
-    const result = await joinTrip('trip-id', 'user@test.com', 'User', '')
+    const result = await joinTrip('trip-id')
     expect(mockRpc).toHaveBeenCalledWith('join_trip_rpc', { p_trip_id: 'trip-id' })
     expect(result).toBe(true)
   })
 
   it('returns false when the rpc errors', async () => {
     mockRpc.mockResolvedValue({ data: null, error: { message: 'boom' } })
-    const result = await joinTrip('bad-trip-id', 'user@test.com', 'User', '')
+    const result = await joinTrip('bad-trip-id')
     expect(result).toBe(false)
   })
 
   it('returns false when the rpc reports failure (trip not found)', async () => {
     mockRpc.mockResolvedValue({ data: false, error: null })
-    const result = await joinTrip('missing-trip', 'user@test.com', 'User', '')
+    const result = await joinTrip('missing-trip')
     expect(result).toBe(false)
   })
 })

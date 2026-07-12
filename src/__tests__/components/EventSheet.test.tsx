@@ -1,12 +1,14 @@
 // @vitest-environment happy-dom
 import { render, screen, fireEvent } from '@testing-library/react'
 import { EventSheet } from '../../components/EventSheet'
+import { deleteEvent } from '../../lib/db'
 import type { TripEvent } from '../../types'
 
 vi.mock('../../lib/db', () => ({
   createEvent: vi.fn().mockResolvedValue('new-id'),
   updateEvent: vi.fn().mockResolvedValue(undefined),
   deleteEvent: vi.fn().mockResolvedValue(undefined),
+  reorderEvents: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('../../lib/storage', () => ({
@@ -29,7 +31,7 @@ describe('EventSheet', () => {
     render(
       <EventSheet open={false} event={null} dayId="d1" tripId="t1" events={[]} onClose={() => {}} />
     )
-    expect(screen.queryByText('共同')).toBeNull()
+    expect(screen.queryByText('共同行程')).toBeNull()
   })
 
   it('shows create title and empty form when open=true with no event', () => {
@@ -48,13 +50,34 @@ describe('EventSheet', () => {
     expect(screen.getByDisplayValue('美麗海水族館')).toBeInTheDocument()
   })
 
+  it('disables save and shows a hint when the title is empty', () => {
+    render(
+      <EventSheet open={true} event={null} dayId="d1" tripId="t1" events={[]} onClose={() => {}} />
+    )
+    expect(screen.getByText('儲存')).toBeDisabled()
+    expect(screen.getByText('請輸入行程名稱')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByPlaceholderText('行程名稱'), { target: { value: '首里城' } })
+    expect(screen.getByText('儲存')).toBeEnabled()
+    expect(screen.queryByText('請輸入行程名稱')).toBeNull()
+  })
+
+  it('fills times from a quick preset pill', () => {
+    render(
+      <EventSheet open={true} event={null} dayId="d1" tripId="t1" events={[]} onClose={() => {}} />
+    )
+    fireEvent.click(screen.getByText('早上'))
+    expect(screen.getByDisplayValue('09:00')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('12:00')).toBeInTheDocument()
+  })
+
   it('switches to fork mode and shows text inputs when no members provided', () => {
     render(
       <EventSheet open={true} event={null} dayId="d1" tripId="t1" events={[]} onClose={() => {}} />
     )
-    fireEvent.click(screen.getByText('分岔'))
-    expect(screen.getByPlaceholderText('人名 A')).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('人名 B')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('分頭行動'))
+    expect(screen.getByPlaceholderText('第 1 組')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('第 2 組')).toBeInTheDocument()
   })
 
   it('switches to fork mode and shows member selects when members provided', () => {
@@ -65,11 +88,35 @@ describe('EventSheet', () => {
     render(
       <EventSheet open={true} event={null} dayId="d1" tripId="t1" events={[]} members={members} onClose={() => {}} />
     )
-    fireEvent.click(screen.getByText('分岔'))
+    fireEvent.click(screen.getByText('分頭行動'))
     const selects = screen.getAllByRole('combobox')
     expect(selects).toHaveLength(2)
     expect(screen.getAllByText('Alice')).toHaveLength(2)
     expect(screen.getAllByText('Bob')).toHaveLength(2)
+  })
+
+  it('adds a third fork group with ＋ 新增一組', () => {
+    render(
+      <EventSheet open={true} event={null} dayId="d1" tripId="t1" events={[]} onClose={() => {}} />
+    )
+    fireEvent.click(screen.getByText('分頭行動'))
+    fireEvent.click(screen.getByText('＋ 新增一組'))
+    expect(screen.getByPlaceholderText('第 3 組')).toBeInTheDocument()
+
+    // removable back down to two
+    fireEvent.click(screen.getByLabelText('移除第 3 組'))
+    expect(screen.queryByPlaceholderText('第 3 組')).toBeNull()
+  })
+
+  it('asks for confirmation before deleting', () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    render(
+      <EventSheet open={true} event={sharedEvent} dayId="d1" tripId="t1" events={[sharedEvent]} onClose={() => {}} />
+    )
+    fireEvent.click(screen.getByText('刪除'))
+    expect(confirmSpy).toHaveBeenCalled()
+    expect(deleteEvent).not.toHaveBeenCalled()
+    confirmSpy.mockRestore()
   })
 
   it('calls onClose when backdrop clicked', () => {

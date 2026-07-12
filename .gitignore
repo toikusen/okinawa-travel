@@ -25,3 +25,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# E2E screenshots & Supabase CLI temp
+.playwright-mcp/
+supabase/.temp/

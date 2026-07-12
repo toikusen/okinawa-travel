@@ -42,25 +42,20 @@ const eventWithImage: TripEvent = {
 
 describe('EventCard with image', () => {
   it('shows thumbnail img when image_url is present', () => {
-    render(<EventCard event={eventWithImage} onClick={() => {}} onImageClick={() => {}} />)
+    render(<EventCard event={eventWithImage} onClick={() => {}} />)
     const img = screen.getByRole('img')
     expect(img).toHaveAttribute('src', 'https://cdn.example.com/img.jpg')
   })
 
-  it('calls onImageClick when thumbnail is tapped', () => {
-    const onImageClick = vi.fn()
-    render(<EventCard event={eventWithImage} onClick={() => {}} onImageClick={onImageClick} />)
+  it('whole card triggers onClick regardless of image', () => {
+    const onClick = vi.fn()
+    render(<EventCard event={eventWithImage} onClick={onClick} />)
     fireEvent.click(screen.getByRole('img'))
-    expect(onImageClick).toHaveBeenCalledWith(eventWithImage)
+    expect(onClick).toHaveBeenCalledWith(eventWithImage)
   })
 
-  it('shows edit button when no image_url', () => {
+  it('is a single tap target labeled 查看行程', () => {
     render(<EventCard event={sharedEvent} onClick={() => {}} />)
-    expect(screen.getByLabelText('編輯行程')).toBeInTheDocument()
-  })
-
-  it('hides edit button when image_url is present', () => {
-    render(<EventCard event={eventWithImage} onClick={() => {}} onImageClick={() => {}} />)
-    expect(screen.queryByLabelText('編輯行程')).toBeNull()
+    expect(screen.getByLabelText('查看行程')).toBeInTheDocument()
   })
 })

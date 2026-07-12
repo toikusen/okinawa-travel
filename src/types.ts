@@ -14,7 +14,7 @@ export interface TripEvent {
   location: string
   notes: string
   sort_order: number
-  fork_items?: [ForkItem, ForkItem]
+  fork_items?: ForkItem[]
   image_url?: string | null
   link_url?: string | null
 }

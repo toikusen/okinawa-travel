@@ -8,7 +8,7 @@ export function LoginPage() {
       <div className="text-center">
         <div className="text-5xl mb-4">🌺</div>
         <h1 className="text-2xl font-bold text-[#1a2530]">Tabi</h1>
-        <p className="text-[#5a7a8a] mt-2 text-sm">共享行程，一起出發</p>
+        <p className="text-[#52707f] mt-2 text-sm">和朋友一起排行程，即時同步</p>
       </div>
       <button
         onClick={() => signIn()}
