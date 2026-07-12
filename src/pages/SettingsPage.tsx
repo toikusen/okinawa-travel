@@ -4,20 +4,10 @@ import { useAuth } from '../hooks/useAuth'
 import { useTrip } from '../hooks/useTrip'
 import { updateTrip, updateTripDates, deleteTrip, removeMember } from '../lib/db'
 import { MembersSection } from '../components/MembersSection'
-
-function SavedBadge() {
-  return (
-    <span className="flex items-center gap-1 text-[11px] font-semibold text-[#22c55e]">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M20 6L9 17l-5-5" />
-      </svg>
-      已儲存
-    </span>
-  )
-}
+import { SavedBadge } from '../components/SavedBadge'
 
 export function SettingsPage() {
-  const { user, signOut } = useAuth()
+  const { user } = useAuth()
   const navigate = useNavigate()
   const { tripId } = useParams<{ tripId: string }>()
   const { trip } = useTrip(tripId ?? null)
@@ -106,11 +96,6 @@ export function SettingsPage() {
     }
   }
 
-  const handleSignOut = async () => {
-    await signOut()
-    navigate('/', { replace: true })
-  }
-
   return (
     <div className="min-h-screen bg-[#f0f4f8] flex flex-col max-w-lg mx-auto">
       <header className="bg-white border-b border-[#e8edf2] px-4 py-3 flex items-center gap-3 sticky top-0 z-10">
@@ -163,22 +148,6 @@ export function SettingsPage() {
         </section>
 
         {trip && <MembersSection trip={trip} currentEmail={user?.email} />}
-
-        <section className="bg-white rounded-[12px] p-4 border border-[#e8edf2]">
-          <p className="text-xs font-semibold text-[#52707f] mb-3">帳號</p>
-          <div className="flex items-center gap-3 mb-4">
-            {user?.user_metadata?.avatar_url && (
-              <img src={user.user_metadata.avatar_url as string} alt="" className="w-8 h-8 rounded-full" />
-            )}
-            <p className="text-sm text-[#1a2530]">{user?.user_metadata?.full_name as string}</p>
-          </div>
-          <button
-            onClick={handleSignOut}
-            className="w-full border border-[#e8edf2] bg-white text-[#5a7a8a] rounded-[8px] py-2.5 text-sm font-semibold active:opacity-70"
-          >
-            登出
-          </button>
-        </section>
 
         <section className="bg-white rounded-[12px] p-4 border border-[#fecaca]">
           <p className="text-xs font-semibold text-[#dc2626] mb-3">危險區</p>

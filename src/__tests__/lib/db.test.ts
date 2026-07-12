@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { mockFrom, mockChannel, mockRpc, mockStorageFrom } = vi.hoisted(() => {
+const { mockFrom, mockChannel, mockRpc, mockStorageFrom, mockUpdateUser } = vi.hoisted(() => {
   const mockFrom = vi.fn()
   const mockChannel = vi.fn(() => ({
     on: vi.fn().mockReturnThis(),
@@ -9,7 +9,8 @@ const { mockFrom, mockChannel, mockRpc, mockStorageFrom } = vi.hoisted(() => {
   }))
   const mockRpc = vi.fn()
   const mockStorageFrom = vi.fn()
-  return { mockFrom, mockChannel, mockRpc, mockStorageFrom }
+  const mockUpdateUser = vi.fn()
+  return { mockFrom, mockChannel, mockRpc, mockStorageFrom, mockUpdateUser }
 })
 
 vi.mock('../../supabase', () => ({
@@ -19,6 +20,7 @@ vi.mock('../../supabase', () => ({
     removeChannel: vi.fn(),
     rpc: mockRpc,
     storage: { from: mockStorageFrom },
+    auth: { updateUser: mockUpdateUser },
   },
 }))
 
@@ -33,6 +35,7 @@ import {
   dateRange,
   updateTripDates,
   removeMember,
+  updateMyDisplayName,
 } from '../../lib/db'
 
 beforeEach(() => {
@@ -89,6 +92,42 @@ describe('joinTrip', () => {
     mockRpc.mockResolvedValue({ data: false, error: null })
     const result = await joinTrip('missing-trip')
     expect(result).toBe(false)
+  })
+})
+
+describe('updateMyDisplayName', () => {
+  const memberUpdate = (error: unknown = null) => {
+    const eq = vi.fn().mockResolvedValue({ error })
+    const update = vi.fn().mockReturnValue({ eq })
+    mockFrom.mockReturnValue({ update })
+    return { update, eq }
+  }
+
+  it('updates all own trip_members rows and auth metadata', async () => {
+    const { update, eq } = memberUpdate()
+    mockUpdateUser.mockResolvedValue({ error: null })
+
+    const ok = await updateMyDisplayName('sei@test.com', '小安')
+
+    expect(ok).toBe(true)
+    expect(mockFrom).toHaveBeenCalledWith('trip_members')
+    expect(update).toHaveBeenCalledWith({ display_name: '小安' })
+    expect(eq).toHaveBeenCalledWith('user_email', 'sei@test.com')
+    expect(mockUpdateUser).toHaveBeenCalledWith({ data: { full_name: '小安' } })
+  })
+
+  it('returns false when the member update fails', async () => {
+    memberUpdate({ message: 'rls' })
+    mockUpdateUser.mockResolvedValue({ error: null })
+
+    expect(await updateMyDisplayName('sei@test.com', '小安')).toBe(false)
+  })
+
+  it('returns false when the auth metadata update fails', async () => {
+    memberUpdate()
+    mockUpdateUser.mockResolvedValue({ error: { message: 'boom' } })
+
+    expect(await updateMyDisplayName('sei@test.com', '小安')).toBe(false)
   })
 })
 

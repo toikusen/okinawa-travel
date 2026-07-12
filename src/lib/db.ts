@@ -94,6 +94,16 @@ export async function joinTrip(tripId: string): Promise<boolean> {
   return !error && data === true
 }
 
+export async function updateMyDisplayName(email: string, name: string): Promise<boolean> {
+  // Two writes: trip_members is what other members see; auth metadata seeds
+  // display_name when creating/joining future trips.
+  const { error: memberError } = await supabase.from('trip_members')
+    .update({ display_name: name })
+    .eq('user_email', email)
+  const { error: authError } = await supabase.auth.updateUser({ data: { full_name: name } })
+  return !memberError && !authError
+}
+
 export async function removeMember(tripId: string, email: string): Promise<boolean> {
   const { error, count } = await supabase.from('trip_members')
     .delete({ count: 'exact' })

@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth'
 import { listMyTrips, type TripSummary } from '../lib/db'
 import { fmtRange, dayCount, tripStatus, daysUntil } from '../lib/dates'
 import { AvatarStack } from '../components/AvatarStack'
+import { AccountSheet } from '../components/AccountSheet'
 import { InstallPrompt } from '../components/InstallPrompt'
 import { Logo } from '../components/Logo'
 
@@ -66,6 +67,7 @@ export function TripListPage() {
   const navigate = useNavigate()
   const [trips, setTrips] = useState<TripSummary[] | null>(readTripsCache)
   const [loadError, setLoadError] = useState(false)
+  const [accountOpen, setAccountOpen] = useState(false)
 
   useEffect(() => {
     listMyTrips()
@@ -89,9 +91,15 @@ export function TripListPage() {
           <Logo size={26} />
           <span className="text-base font-bold text-[#1a2530]">Tabi</span>
         </div>
-        {user?.user_metadata?.avatar_url && (
-          <img src={user.user_metadata.avatar_url as string} alt="" className="w-7 h-7 rounded-full" />
-        )}
+        <button onClick={() => setAccountOpen(true)} aria-label="帳號設定" className="w-11 h-11 -my-1.5 -mr-2 flex items-center justify-center active:opacity-70">
+          {user?.user_metadata?.avatar_url ? (
+            <img src={user.user_metadata.avatar_url as string} alt="" className="w-7 h-7 rounded-full" />
+          ) : (
+            <span className="w-7 h-7 rounded-full bg-[#e3f1f9] text-[#0077b6] text-xs font-bold flex items-center justify-center">
+              {(user?.user_metadata?.full_name as string || user?.email || '?').charAt(0).toUpperCase()}
+            </span>
+          )}
+        </button>
       </header>
 
       <main className="flex-1 px-4 py-4 pb-24 flex flex-col gap-3">
@@ -132,6 +140,8 @@ export function TripListPage() {
           </svg>
         </button>
       )}
+
+      {accountOpen && <AccountSheet onClose={() => setAccountOpen(false)} />}
 
       <InstallPrompt />
     </div>

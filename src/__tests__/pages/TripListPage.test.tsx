@@ -11,10 +11,11 @@ vi.mock('react-router-dom', async () => {
 const mockListMyTrips = vi.fn()
 vi.mock('../../lib/db', () => ({
   listMyTrips: () => mockListMyTrips(),
+  updateMyDisplayName: vi.fn(),
 }))
 
 vi.mock('../../hooks/useAuth', () => ({
-  useAuth: () => ({ user: { email: 'sei@test.com', user_metadata: {} } }),
+  useAuth: () => ({ user: { email: 'sei@test.com', user_metadata: {} }, signOut: vi.fn() }),
 }))
 
 vi.mock('../../components/InstallPrompt', () => ({ InstallPrompt: () => null }))
@@ -92,6 +93,16 @@ describe('TripListPage', () => {
     fireEvent.click(await screen.findByLabelText('新增旅程'))
 
     expect(mockNavigate).toHaveBeenCalledWith('/trips/new')
+  })
+
+  it('opens the account sheet from the header avatar button', async () => {
+    mockListMyTrips.mockResolvedValue([])
+
+    renderPage()
+    fireEvent.click(await screen.findByLabelText('帳號設定'))
+
+    expect(screen.getByLabelText('顯示名稱')).toBeInTheDocument()
+    expect(screen.getByText('登出')).toBeInTheDocument()
   })
 
   it('falls back to cached trips with an error notice when the fetch fails', async () => {
