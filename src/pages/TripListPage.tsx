@@ -85,13 +85,17 @@ export function TripListPage() {
   return (
     <div className="min-h-screen bg-[#f0f4f8] flex flex-col max-w-lg mx-auto">
       <header className="bg-white border-b border-[#e8edf2] px-4 py-3 flex items-center justify-between sticky top-0 z-10">
-        <h1 className="text-base font-bold text-[#1a2530]">我的旅程</h1>
+        <div className="flex items-center gap-2">
+          <Logo size={26} />
+          <span className="text-base font-bold text-[#1a2530]">Tabi</span>
+        </div>
         {user?.user_metadata?.avatar_url && (
           <img src={user.user_metadata.avatar_url as string} alt="" className="w-7 h-7 rounded-full" />
         )}
       </header>
 
       <main className="flex-1 px-4 py-4 pb-24 flex flex-col gap-3">
+        <h1 className="text-sm font-bold text-[#1a2530]">我的旅程</h1>
         {trips === null && <p className="text-sm text-[#52707f] text-center py-8">載入中...</p>}
 
         {loadError && (
