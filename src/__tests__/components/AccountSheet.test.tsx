@@ -2,14 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 
 const mockSignOut = vi.fn()
+let mockUser: { email: string; user_metadata: Record<string, string> } | null = null
 vi.mock('../../hooks/useAuth', () => ({
-  useAuth: () => ({
-    user: {
-      email: 'sei@test.com',
-      user_metadata: { full_name: '小安', avatar_url: '' },
-    },
-    signOut: mockSignOut,
-  }),
+  useAuth: () => ({ user: mockUser, signOut: mockSignOut }),
 }))
 
 const mockUpdateMyDisplayName = vi.fn()
@@ -21,30 +16,55 @@ import { AccountSheet } from '../../components/AccountSheet'
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockUser = {
+    email: 'sei@test.com',
+    user_metadata: { full_name: '小安', avatar_url: '' },
+  }
 })
 
 describe('AccountSheet', () => {
-  it('saves the trimmed name on blur and shows the saved badge', async () => {
+  it('fills in the current name once the async user loads', () => {
+    // useAuth starts with user=null and resolves later — the input must sync
+    mockUser = null
+    const { rerender } = render(<AccountSheet onClose={vi.fn()} />)
+    expect(screen.getByLabelText('顯示名稱')).toHaveValue('')
+
+    mockUser = { email: 'sei@test.com', user_metadata: { full_name: '小安', avatar_url: '' } }
+    rerender(<AccountSheet onClose={vi.fn()} />)
+    expect(screen.getByLabelText('顯示名稱')).toHaveValue('小安')
+  })
+
+  it('saves the trimmed name via the save button and shows the saved badge', async () => {
     mockUpdateMyDisplayName.mockResolvedValue(true)
     render(<AccountSheet onClose={vi.fn()} />)
 
-    const input = screen.getByLabelText('顯示名稱')
-    fireEvent.change(input, { target: { value: '  阿安  ' } })
-    fireEvent.blur(input)
+    fireEvent.change(screen.getByLabelText('顯示名稱'), { target: { value: '  阿安  ' } })
+    fireEvent.click(screen.getByText('儲存'))
 
     expect(await screen.findByText('已儲存')).toBeInTheDocument()
     expect(mockUpdateMyDisplayName).toHaveBeenCalledWith('sei@test.com', '阿安')
   })
 
-  it('does not save when the name is unchanged or empty', () => {
+  it('saves on Enter', async () => {
+    mockUpdateMyDisplayName.mockResolvedValue(true)
     render(<AccountSheet onClose={vi.fn()} />)
 
     const input = screen.getByLabelText('顯示名稱')
-    fireEvent.blur(input) // unchanged
-    fireEvent.change(input, { target: { value: '   ' } })
-    fireEvent.blur(input) // empty
+    fireEvent.change(input, { target: { value: '阿安' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
 
-    expect(mockUpdateMyDisplayName).not.toHaveBeenCalled()
+    expect(await screen.findByText('已儲存')).toBeInTheDocument()
+  })
+
+  it('disables the save button when the name is unchanged or empty', () => {
+    render(<AccountSheet onClose={vi.fn()} />)
+
+    const button = screen.getByText('儲存')
+    expect(button).toBeDisabled() // unchanged
+    fireEvent.change(screen.getByLabelText('顯示名稱'), { target: { value: '   ' } })
+    expect(button).toBeDisabled() // empty
+    fireEvent.change(screen.getByLabelText('顯示名稱'), { target: { value: '阿安' } })
+    expect(button).toBeEnabled()
   })
 
   it('alerts when saving fails', async () => {
@@ -52,9 +72,8 @@ describe('AccountSheet', () => {
     const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
     render(<AccountSheet onClose={vi.fn()} />)
 
-    const input = screen.getByLabelText('顯示名稱')
-    fireEvent.change(input, { target: { value: '阿安' } })
-    fireEvent.blur(input)
+    fireEvent.change(screen.getByLabelText('顯示名稱'), { target: { value: '阿安' } })
+    fireEvent.click(screen.getByText('儲存'))
 
     await vi.waitFor(() => expect(alertSpy).toHaveBeenCalled())
     alertSpy.mockRestore()
