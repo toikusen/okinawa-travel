@@ -5,11 +5,12 @@ vi.mock('../../lib/db', () => ({
   reorderEvents: vi.fn(async () => ({ ok: true })),
   updateDayLabel: vi.fn(async () => ({ ok: true })),
 }))
+vi.mock('../../lib/toast', () => ({ toast: vi.fn() }))
 vi.mock('../../components/EventSheet', () => ({ EventSheet: () => null }))
 vi.mock('../../components/EventDetailSheet', () => ({ EventDetailSheet: () => null }))
 vi.mock('../../hooks/useNow', () => ({ useNow: () => new Date('2026-10-12T10:00:00') }))
 
-import { DaySection } from '../../components/DaySection'
+import { DaySection, applyReorder } from '../../components/DaySection'
 
 const day = { id: 'd1', date: '2026-10-12', label: '', sort_order: 0 }
 const ev = (id: string, time_start: string) => ({
@@ -35,5 +36,22 @@ describe('DaySection now line', () => {
       <DaySection day={{ ...day, date: '2026-10-13' }} tripId="t1" members={[]} events={[ev('a', '09:00')]} />
     )
     expect(screen.queryByTestId('now-line')).not.toBeInTheDocument()
+  })
+
+  it('shows a visible drag handle', () => {
+    render(<DaySection day={day} tripId="t1" members={[]} events={[ev('a', '09:00')]} />)
+    expect(screen.getByRole('button', { name: '拖曳排序' })).toBeVisible()
+  })
+})
+
+describe('applyReorder', () => {
+  it('applyReorder moves an item and reports the new order', () => {
+    const list = [ev('a', '09:00'), ev('b', '10:00'), ev('c', '11:00')]
+    expect(applyReorder(list, 'c', 'a').map(e => e.id)).toEqual(['c', 'a', 'b'])
+  })
+
+  it('applyReorder returns the original list when either id is unknown', () => {
+    const list = [ev('a', '09:00')]
+    expect(applyReorder(list, 'a', 'zzz')).toBe(list)
   })
 })

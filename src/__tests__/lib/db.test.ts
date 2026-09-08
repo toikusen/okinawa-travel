@@ -161,21 +161,22 @@ describe('createEvent', () => {
 })
 
 describe('reorderEvents', () => {
-  it('calls update for each id with correct sort_order', async () => {
-    const mockEq = vi.fn().mockResolvedValue({ error: null })
-    const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq })
-    mockFrom.mockReturnValue({ update: mockUpdate })
-
-    const result = await reorderEvents('day-id', ['e1', 'e2', 'e3'])
-
-    expect(mockUpdate).toHaveBeenCalledTimes(3)
-    expect(mockUpdate).toHaveBeenCalledWith({ sort_order: 0 })
-    expect(mockUpdate).toHaveBeenCalledWith({ sort_order: 1 })
-    expect(mockUpdate).toHaveBeenCalledWith({ sort_order: 2 })
-    expect(mockEq).toHaveBeenCalledWith('id', 'e1')
-    expect(mockEq).toHaveBeenCalledWith('id', 'e2')
-    expect(mockEq).toHaveBeenCalledWith('id', 'e3')
+  it('sends a single rpc call instead of one update per event', async () => {
+    mockRpc.mockResolvedValue({ data: true, error: null })
+    const result = await reorderEvents('d1', ['e2', 'e1'])
+    expect(mockRpc).toHaveBeenCalledOnce()
+    expect(mockRpc).toHaveBeenCalledWith('reorder_events_rpc', { p_day_id: 'd1', p_ids: ['e2', 'e1'] })
     expect(result).toEqual({ ok: true })
+  })
+
+  it('reports failure when the rpc errors', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: { message: 'denied' } })
+    expect(await reorderEvents('d1', ['e1'])).toEqual({ ok: false, error: 'denied' })
+  })
+
+  it('reports failure when the rpc returns false', async () => {
+    mockRpc.mockResolvedValue({ data: false, error: null })
+    expect(await reorderEvents('d1', ['e1'])).toEqual({ ok: false, error: 'REORDER_REJECTED' })
   })
 })
 

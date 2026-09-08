@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors,
   type DragEndEvent,
@@ -9,6 +9,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { reorderEvents, updateDayLabel } from '../lib/db'
+import { toast } from '../lib/toast'
 import { fmtMD, todayStr, hhmm, nowLineIndex } from '../lib/dates'
 import { useNow } from '../hooks/useNow'
 import { EventCard } from './EventCard'
@@ -16,6 +17,15 @@ import { ForkCard } from './ForkCard'
 import { EventSheet } from './EventSheet'
 import { EventDetailSheet } from './EventDetailSheet'
 import type { Day, TripEvent, TripMember } from '../types'
+
+/** Move `activeId` to `overId`'s position. Returns the input untouched when
+ *  either id is not in the list. */
+export function applyReorder(events: TripEvent[], activeId: string, overId: string): TripEvent[] {
+  const from = events.findIndex((e) => e.id === activeId)
+  const to = events.findIndex((e) => e.id === overId)
+  if (from < 0 || to < 0) return events
+  return arrayMove(events, from, to)
+}
 
 function SortableCard({
   event,
@@ -46,13 +56,15 @@ function SortableCard({
         {...listeners}
         role="button"
         aria-label="拖曳排序"
-        className="absolute left-0 top-0 bottom-0 w-8 z-10 flex items-center justify-center text-[#c7d2da] touch-none cursor-grab active:cursor-grabbing"
+        className="absolute left-0 top-0 bottom-0 w-8 z-10 flex items-center justify-center touch-none cursor-grab active:cursor-grabbing"
       >
-        <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor" aria-hidden="true">
-          <circle cx="3" cy="3" r="1.4" /><circle cx="8" cy="3" r="1.4" />
-          <circle cx="3" cy="8" r="1.4" /><circle cx="8" cy="8" r="1.4" />
-          <circle cx="3" cy="13" r="1.4" /><circle cx="8" cy="13" r="1.4" />
-        </svg>
+        <span className="w-5 h-7 rounded-[5px] bg-[#f0f4f8] flex items-center justify-center text-[#8fa0b0]">
+          <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor" aria-hidden="true">
+            <circle cx="3" cy="3" r="1.4" /><circle cx="8" cy="3" r="1.4" />
+            <circle cx="3" cy="8" r="1.4" /><circle cx="8" cy="8" r="1.4" />
+            <circle cx="3" cy="13" r="1.4" /><circle cx="8" cy="13" r="1.4" />
+          </svg>
+        </span>
       </span>
       {event.type === 'fork' ? (
         <ForkCard event={event} onClick={onOpen} />
@@ -80,13 +92,18 @@ interface Props {
   events: TripEvent[]
 }
 
-export function DaySection({ day, tripId, members, events }: Props) {
+export function DaySection({ day, tripId, members, events: incomingEvents }: Props) {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<TripEvent | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
   const [detailEvent, setDetailEvent] = useState<TripEvent | null>(null)
   const [editingLabel, setEditingLabel] = useState(false)
   const [labelDraft, setLabelDraft] = useState(day.label)
+  const [pendingOrder, setPendingOrder] = useState<TripEvent[] | null>(null)
+  const events = pendingOrder ?? incomingEvents
+
+  // A realtime refetch is the authoritative answer; drop the local guess.
+  useEffect(() => { setPendingOrder(null) }, [incomingEvents])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 3 } }),
@@ -101,10 +118,15 @@ export function DaySection({ day, tripId, members, events }: Props) {
 
   const handleDragEnd = async ({ active, over }: DragEndEvent) => {
     if (!over || active.id === over.id) return
-    const oldIndex = events.findIndex((e) => e.id === active.id)
-    const newIndex = events.findIndex((e) => e.id === over.id)
-    const reordered = arrayMove(events, oldIndex, newIndex)
-    await reorderEvents(day.id, reordered.map((e) => e.id))
+    const reordered = applyReorder(events, String(active.id), String(over.id))
+    if (reordered === events) return
+
+    setPendingOrder(reordered)
+    const result = await reorderEvents(day.id, reordered.map((e) => e.id))
+    if (!result.ok) {
+      setPendingOrder(null)
+      toast('排序沒有存成功,已還原')
+    }
   }
 
   const handleLabelBlur = async () => {

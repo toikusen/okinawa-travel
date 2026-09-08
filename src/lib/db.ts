@@ -314,14 +314,13 @@ export async function deleteEvent(eventId: string): Promise<WriteResult> {
   return error ? { ok: false, error: error.message } : { ok: true }
 }
 
-export async function reorderEvents(_dayId: string, orderedIds: string[]): Promise<WriteResult> {
-  const results = await Promise.all(
-    orderedIds.map((id, i) =>
-      supabase.from('events').update({ sort_order: i }).eq('id', id)
-    )
-  )
-  const failed = results.find(r => r.error)
-  return failed?.error ? { ok: false, error: failed.error.message } : { ok: true }
+export async function reorderEvents(dayId: string, orderedIds: string[]): Promise<WriteResult> {
+  const { data, error } = await supabase.rpc('reorder_events_rpc', {
+    p_day_id: dayId,
+    p_ids: orderedIds,
+  })
+  if (error) return { ok: false, error: error.message }
+  return data === true ? { ok: true } : { ok: false, error: 'REORDER_REJECTED' }
 }
 
 // Re-export TripMember so callers don't need to import from types directly
