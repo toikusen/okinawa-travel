@@ -179,17 +179,17 @@ describe('reorderEvents', () => {
 })
 
 describe('listMyTrips', () => {
-  it('selects trips ordered by start_date desc', async () => {
-    const mockOrder = vi.fn().mockResolvedValue({
+  it('selects trips without a server-side order (ordering is client-side)', async () => {
+    const mockSelect = vi.fn().mockResolvedValue({
       data: [{ id: 't1', name: 'Tokyo', start_date: '2026-08-01', end_date: '2026-08-05', owner_email: 'sei@test.com' }],
       error: null,
     })
-    mockFrom.mockReturnValue({ select: vi.fn().mockReturnValue({ order: mockOrder }) })
+    mockFrom.mockReturnValue({ select: mockSelect })
 
     const trips = await listMyTrips()
 
     expect(mockFrom).toHaveBeenCalledWith('trips')
-    expect(mockOrder).toHaveBeenCalledWith('start_date', { ascending: false })
+    expect(mockSelect).toHaveBeenCalledWith('id, name, start_date, end_date, owner_email, trip_members(user_email, display_name, avatar_url)')
     expect(trips).toHaveLength(1)
     expect(trips[0].id).toBe('t1')
   })

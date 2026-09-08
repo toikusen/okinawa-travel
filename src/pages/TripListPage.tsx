@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { listMyTrips, type TripSummary } from '../lib/db'
-import { fmtRange, dayCount, tripStatus, daysUntil } from '../lib/dates'
+import { fmtRange, dayCount, tripStatus, daysUntil, sortTrips } from '../lib/dates'
 import { AvatarStack } from '../components/AvatarStack'
 import { AccountSheet } from '../components/AccountSheet'
 import { InstallPrompt } from '../components/InstallPrompt'
@@ -81,8 +81,8 @@ export function TripListPage() {
       })
   }, [])
 
-  const active = trips?.filter(t => tripStatus(t.start_date, t.end_date) !== 'ended') ?? []
-  const ended = trips?.filter(t => tripStatus(t.start_date, t.end_date) === 'ended') ?? []
+  const { ongoing, upcoming, ended } = sortTrips(trips ?? [])
+  const active = [...ongoing, ...upcoming]
 
   return (
     <div className="min-h-screen bg-[#f0f4f8] flex flex-col max-w-lg mx-auto">

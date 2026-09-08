@@ -122,7 +122,6 @@ export async function listMyTrips(): Promise<TripSummary[]> {
   const { data, error } = await supabase
     .from('trips')
     .select('id, name, start_date, end_date, owner_email, trip_members(user_email, display_name, avatar_url)')
-    .order('start_date', { ascending: false })
   if (error) throw new Error(error.message)
   return (data ?? []).map((t: Record<string, unknown>) => ({
     id: t.id as string,

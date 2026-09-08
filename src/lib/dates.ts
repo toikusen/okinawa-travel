@@ -54,3 +54,25 @@ export function tripStatus(start: string, end: string, today = todayStr()): Trip
 export function hhmm(d: Date): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
+
+/** Group trips by status, each group ordered the way a traveller reads it:
+ *  ongoing and upcoming soonest-first, ended most-recent-first. */
+export function sortTrips<T extends { start_date: string; end_date: string }>(
+  trips: T[],
+  today = todayStr()
+): { ongoing: T[]; upcoming: T[]; ended: T[] } {
+  const ongoing: T[] = []
+  const upcoming: T[] = []
+  const ended: T[] = []
+
+  for (const trip of trips) {
+    const bucket = { ongoing, upcoming, ended }[tripStatus(trip.start_date, trip.end_date, today)]
+    bucket.push(trip)
+  }
+
+  ongoing.sort((a, b) => a.start_date.localeCompare(b.start_date))
+  upcoming.sort((a, b) => a.start_date.localeCompare(b.start_date))
+  ended.sort((a, b) => b.end_date.localeCompare(a.end_date))
+
+  return { ongoing, upcoming, ended }
+}

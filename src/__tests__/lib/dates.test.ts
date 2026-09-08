@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fmtMD, fmtChip, fmtRange, dayCount, daysUntil, tripStatus, todayStr, hhmm } from '../../lib/dates'
+import { fmtMD, fmtChip, fmtRange, dayCount, daysUntil, tripStatus, todayStr, hhmm, sortTrips } from '../../lib/dates'
 
 describe('dates', () => {
   it('formats YYYY-MM-DD as M/D (weekday)', () => {
@@ -41,5 +41,35 @@ describe('dates', () => {
   it('hhmm zero-pads hours and minutes', () => {
     expect(hhmm(new Date('2026-10-12T09:05:00'))).toBe('09:05')
     expect(hhmm(new Date('2026-10-12T18:45:00'))).toBe('18:45')
+  })
+})
+
+describe('sortTrips', () => {
+  const t = (id: string, start: string, end: string) => ({ id, start_date: start, end_date: end })
+
+  it('puts the soonest upcoming trip first', () => {
+    const { upcoming } = sortTrips(
+      [t('far', '2026-12-01', '2026-12-05'), t('soon', '2026-09-20', '2026-09-22')],
+      '2026-09-08'
+    )
+    expect(upcoming.map(x => x.id)).toEqual(['soon', 'far'])
+  })
+
+  it('puts the most recently ended trip first', () => {
+    const { ended } = sortTrips(
+      [t('old', '2025-01-01', '2025-01-05'), t('recent', '2026-08-01', '2026-08-05')],
+      '2026-09-08'
+    )
+    expect(ended.map(x => x.id)).toEqual(['recent', 'old'])
+  })
+
+  it('separates the ongoing trip from the rest', () => {
+    const { ongoing, upcoming, ended } = sortTrips(
+      [t('now', '2026-09-07', '2026-09-10'), t('later', '2026-10-01', '2026-10-03'), t('done', '2026-01-01', '2026-01-02')],
+      '2026-09-08'
+    )
+    expect(ongoing.map(x => x.id)).toEqual(['now'])
+    expect(upcoming.map(x => x.id)).toEqual(['later'])
+    expect(ended.map(x => x.id)).toEqual(['done'])
   })
 })
