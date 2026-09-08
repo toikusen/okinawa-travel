@@ -1,5 +1,6 @@
 import type { TripEvent } from '../types'
 import { BottomSheet } from './BottomSheet'
+import { mapsUrl } from '../lib/dates'
 
 interface Props {
   open: boolean
@@ -42,7 +43,18 @@ export function EventDetailSheet({ open, event, onClose, onEdit }: Props) {
               {isFork ? '分頭行動' : event.title}
             </p>
             {event.location && (
-              <p className="text-xs text-[#5a7a8a] mt-0.5">{event.location}</p>
+              <p className="text-xs text-[#5a7a8a] mt-0.5 flex items-center gap-1.5 flex-wrap">
+                <span>{event.location}</span>
+                <a
+                  href={mapsUrl(event.location)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`導航到 ${event.location}`}
+                  className="text-[#0077b6] font-semibold"
+                >
+                  導航
+                </a>
+              </p>
             )}
           </div>
 

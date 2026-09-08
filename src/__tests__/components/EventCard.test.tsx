@@ -54,8 +54,29 @@ describe('EventCard with image', () => {
     expect(onClick).toHaveBeenCalledWith(eventWithImage)
   })
 
-  it('is a single tap target labeled 查看行程', () => {
+  it('is a single tap target exposing the title, not a generic label', () => {
     render(<EventCard event={sharedEvent} onClick={() => {}} />)
-    expect(screen.getByLabelText('查看行程')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '查看行程' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: new RegExp(sharedEvent.title) })).toBeInTheDocument()
+  })
+})
+
+describe('EventCard empty time and location link', () => {
+  it('omits the time row when both times are empty', () => {
+    render(<EventCard event={{ ...sharedEvent, time_start: '', time_end: '' }} onClick={vi.fn()} />)
+    expect(screen.queryByText('–', { exact: false })).not.toBeInTheDocument()
+  })
+
+  it('shows only the start time when there is no end time', () => {
+    render(<EventCard event={{ ...sharedEvent, time_start: '09:00', time_end: '' }} onClick={vi.fn()} />)
+    expect(screen.getByText('09:00')).toBeInTheDocument()
+  })
+
+  it('links the location to Google Maps', () => {
+    render(<EventCard event={{ ...sharedEvent, location: '本部町' }} onClick={vi.fn()} />)
+    const link = screen.getByRole('link', { name: '導航到 本部町' })
+    expect(link).toHaveAttribute('href', expect.stringContaining(encodeURIComponent('本部町')))
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
   })
 })

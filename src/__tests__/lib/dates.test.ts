@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fmtMD, fmtChip, fmtRange, dayCount, daysUntil, tripStatus, todayStr, hhmm, sortTrips } from '../../lib/dates'
+import { fmtMD, fmtChip, fmtRange, dayCount, daysUntil, tripStatus, todayStr, hhmm, sortTrips, mapsUrl } from '../../lib/dates'
 
 describe('dates', () => {
   it('formats YYYY-MM-DD as M/D (weekday)', () => {
@@ -41,6 +41,12 @@ describe('dates', () => {
   it('hhmm zero-pads hours and minutes', () => {
     expect(hhmm(new Date('2026-10-12T09:05:00'))).toBe('09:05')
     expect(hhmm(new Date('2026-10-12T18:45:00'))).toBe('18:45')
+  })
+
+  it('mapsUrl encodes the location into a Google Maps search', () => {
+    expect(mapsUrl('美麗海水族館')).toBe(
+      'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('美麗海水族館')
+    )
   })
 })
 

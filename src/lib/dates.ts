@@ -76,3 +76,8 @@ export function sortTrips<T extends { start_date: string; end_date: string }>(
 
   return { ongoing, upcoming, ended }
 }
+
+/** Google Maps search link for a free-text place name. */
+export function mapsUrl(location: string): string {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`
+}

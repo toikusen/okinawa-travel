@@ -57,4 +57,9 @@ describe('EventDetailSheet', () => {
     fireEvent.click(screen.getByTestId('detail-backdrop'))
     expect(onClose).toHaveBeenCalledTimes(1)
   })
+
+  it('links the location to Google Maps', () => {
+    render(<EventDetailSheet open={true} event={{ ...event, location: '本部町' }} onClose={() => {}} onEdit={() => {}} />)
+    expect(screen.getByRole('link', { name: '導航到 本部町' })).toBeInTheDocument()
+  })
 })
