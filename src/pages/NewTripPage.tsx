@@ -2,14 +2,21 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { createTrip } from '../lib/db'
+import { todayStr } from '../lib/dates'
 import { Logo } from '../components/Logo'
+
+const plusDays = (n: number) => {
+  const d = new Date()
+  d.setDate(d.getDate() + n)
+  return todayStr(d)
+}
 
 export function NewTripPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [tripName, setTripName] = useState('')
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
+  const [startDate, setStartDate] = useState(() => todayStr())
+  const [endDate, setEndDate] = useState(() => plusDays(2))
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState(false)
 

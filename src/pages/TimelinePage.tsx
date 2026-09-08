@@ -9,6 +9,7 @@ import { AvatarStack } from '../components/AvatarStack'
 import { TripNav } from '../components/TripNav'
 import { DaySection } from '../components/DaySection'
 import { InstallPrompt } from '../components/InstallPrompt'
+import { InviteCard } from '../components/InviteCard'
 import { NowSection } from '../components/NowSection'
 import { EventDetailSheet } from '../components/EventDetailSheet'
 import type { TripEvent } from '../types'
@@ -117,6 +118,7 @@ export function TimelinePage() {
       </header>
 
       <main className="flex-1 overflow-y-auto px-4 py-4">
+        <InviteCard trip={trip} />
         {isOngoing && (
           <div id="now-section">
             <NowSection days={days} eventsByDay={eventsByDay} onOpen={setDetailEvent} />

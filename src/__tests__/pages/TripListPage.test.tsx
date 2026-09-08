@@ -1,11 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter, Routes, Route } from 'react-router-dom'
 
+// Wraps the real useNavigate so existing `toHaveBeenCalledWith` assertions keep
+// working while navigation still actually happens (needed for the empty-state
+// CTA test, which checks the resulting route rendered).
 const mockNavigate = vi.fn()
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
-  return { ...actual, useNavigate: () => mockNavigate }
+  return {
+    ...actual,
+    useNavigate: () => {
+      const navigate = actual.useNavigate()
+      return (...args: Parameters<typeof navigate>) => {
+        mockNavigate(...args)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return (navigate as any)(...args)
+      }
+    },
+  }
 })
 
 const mockListMyTrips = vi.fn()
@@ -42,10 +56,18 @@ const members = [
 function renderPage() {
   return render(
     <MemoryRouter>
-      <TripListPage />
+      <Routes>
+        <Route path="/" element={<TripListPage />} />
+        <Route path="/trips/new" element={<div data-testid="new-trip" />} />
+        <Route path="*" element={<div />} />
+      </Routes>
     </MemoryRouter>
   )
 }
+
+const tripsFixture = [
+  { id: 't1', name: '沖繩 2026', start_date: futureDate(10), end_date: futureDate(14), owner_email: 'sei@test.com', members },
+]
 
 describe('TripListPage', () => {
   it('renders trips and navigates to the trip on tap', async () => {
@@ -83,11 +105,26 @@ describe('TripListPage', () => {
 
     renderPage()
 
-    expect(await screen.findByText('還沒有旅程,建立第一個吧!')).toBeInTheDocument()
+    expect(await screen.findByText('還沒有旅程')).toBeInTheDocument()
+  })
+
+  it('offers a real button in the empty state', async () => {
+    mockListMyTrips.mockResolvedValue([])
+    renderPage()
+    const cta = await screen.findByRole('button', { name: '建立第一個旅程' })
+    await userEvent.click(cta)
+    expect(screen.getByTestId('new-trip')).toBeInTheDocument()
+  })
+
+  it('hides the floating add button while there are no trips', async () => {
+    mockListMyTrips.mockResolvedValue([])
+    renderPage()
+    await screen.findByRole('button', { name: '建立第一個旅程' })
+    expect(screen.queryByRole('button', { name: '新增旅程' })).not.toBeInTheDocument()
   })
 
   it('navigates to /trips/new from the floating create button', async () => {
-    mockListMyTrips.mockResolvedValue([])
+    mockListMyTrips.mockResolvedValue(tripsFixture)
 
     renderPage()
     fireEvent.click(await screen.findByLabelText('新增旅程'))
@@ -123,6 +160,6 @@ describe('TripListPage', () => {
     renderPage()
 
     expect(await screen.findByText('無法載入旅程列表,請檢查網路連線')).toBeInTheDocument()
-    expect(screen.queryByText('還沒有旅程,建立第一個吧!')).not.toBeInTheDocument()
+    expect(screen.queryByText('還沒有旅程')).not.toBeInTheDocument()
   })
 })

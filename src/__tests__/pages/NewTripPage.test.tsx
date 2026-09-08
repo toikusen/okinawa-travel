@@ -40,10 +40,14 @@ describe('NewTripPage', () => {
     renderPage()
     expect(screen.getByText('建立旅程')).toBeDisabled()
 
+    // dates are prefilled by default; clear them to exercise the requirement
+    const [start, end] = dateInputs()
+    fireEvent.change(start, { target: { value: '' } })
+    fireEvent.change(end, { target: { value: '' } })
+
     fireEvent.change(screen.getByPlaceholderText('旅程名稱'), { target: { value: '東京' } })
     expect(screen.getByText('建立旅程')).toBeDisabled()
 
-    const [start, end] = dateInputs()
     fireEvent.change(start, { target: { value: '2026-09-01' } })
     fireEvent.change(end, { target: { value: '2026-09-03' } })
     expect(screen.getByText('建立旅程')).toBeEnabled()
@@ -82,5 +86,17 @@ describe('NewTripPage', () => {
 
     expect(await screen.findByText('建立失敗,請再試一次')).toBeInTheDocument()
     expect(mockNavigate).not.toHaveBeenCalled()
+  })
+
+  it('prefills today through today plus two days', () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(new Date('2026-09-08T12:00:00'))
+      renderPage()
+      expect(screen.getByLabelText('開始日期')).toHaveValue('2026-09-08')
+      expect(screen.getByLabelText('結束日期')).toHaveValue('2026-09-10')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

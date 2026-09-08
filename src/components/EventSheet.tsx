@@ -248,6 +248,11 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
             </button>
           ))}
         </div>
+        <p className="text-[11px] text-[#52707f] -mt-2.5 mb-4">
+          {type === 'shared'
+            ? '大家一起去的行程。'
+            : '同一時段大家分開行動時使用,各組的安排分開記錄。'}
+        </p>
 
         {type === 'shared' ? (
           <>

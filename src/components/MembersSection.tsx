@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { removeMember } from '../lib/db'
 import { toast } from '../lib/toast'
+import { useInviteLink } from '../hooks/useInviteLink'
 import type { Trip } from '../types'
 
 interface Props {
@@ -9,30 +10,11 @@ interface Props {
 }
 
 export function MembersSection({ trip, currentEmail }: Props) {
-  const [copied, setCopied] = useState(false)
+  const { copied, share: handleShare, copy: handleCopy } = useInviteLink(trip)
   const [confirming, setConfirming] = useState<string | null>(null)
   const [removing, setRemoving] = useState<string | null>(null)
 
   const isOwner = trip.owner_email === currentEmail
-  const inviteUrl = `${window.location.origin}/join/${trip.id}`
-
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: trip.name, text: `一起來規劃「${trip.name}」`, url: inviteUrl })
-        return
-      } catch {
-        return // user cancelled the share sheet
-      }
-    }
-    await handleCopy()
-  }
-
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(inviteUrl)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
 
   const handleRemove = async (email: string) => {
     if (confirming !== email) {

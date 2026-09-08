@@ -111,9 +111,15 @@ export function TripListPage() {
         )}
 
         {trips?.length === 0 && !loadError && (
-          <div className="flex flex-col items-center gap-2 py-12">
+          <div className="flex flex-col items-center gap-4 py-12">
             <Logo size={44} />
-            <p className="text-sm text-[#52707f]">還沒有旅程,建立第一個吧!</p>
+            <p className="text-sm text-[#52707f]">還沒有旅程</p>
+            <button
+              onClick={() => navigate('/trips/new')}
+              className="bg-[#0077b6] text-white rounded-[10px] py-3 px-6 text-sm font-semibold active:opacity-80"
+            >
+              建立第一個旅程
+            </button>
           </div>
         )}
 
@@ -129,7 +135,7 @@ export function TripListPage() {
         ))}
       </main>
 
-      {trips !== null && (
+      {!!trips?.length && (
         <button
           onClick={() => navigate('/trips/new')}
           aria-label="新增旅程"
