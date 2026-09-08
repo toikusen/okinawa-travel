@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 
 const mockUseTrip = vi.fn()
@@ -25,6 +26,7 @@ function renderAt(path: string) {
     <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route path="/trips/:tripId" element={<TimelinePage />} />
+        <Route path="/trips/:tripId/settings" element={<div data-testid="settings-page" />} />
         <Route path="/" element={<div data-testid="trip-list" />} />
       </Routes>
     </MemoryRouter>
@@ -80,5 +82,18 @@ describe('TimelinePage', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('opens settings from the header gear', async () => {
+    mockUseTrip.mockReturnValue({
+      trip: { id: 't1', name: '沖繩', owner_email: 'sei@test.com', members: [], start_date: '2026-08-01', end_date: '2026-08-02' },
+      days: [{ id: 'd1', date: '2026-08-01', label: '', sort_order: 0 }],
+      eventsByDay: {},
+      loading: false,
+    })
+
+    renderAt('/trips/t1')
+    await userEvent.click(screen.getByRole('button', { name: '旅程設定' }))
+    expect(screen.getByTestId('settings-page')).toBeInTheDocument()
   })
 })

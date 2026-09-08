@@ -51,6 +51,7 @@ export function TimelinePage() {
 
   const today = todayStr()
   const highlighted = activeDay ?? days.find(d => d.date === today)?.id ?? null
+  const isOngoing = tripStatus(trip.start_date, trip.end_date) === 'ongoing'
 
   const scrollToDay = (dayId: string) => {
     setActiveDay(dayId)
@@ -71,13 +72,25 @@ export function TimelinePage() {
           </div>
           <div className="flex items-center gap-2.5 shrink-0">
             <SyncIndicator status={syncStatus} />
-            {trip.members.length > 0 ? (
-              <AvatarStack members={trip.members} size={24} max={3} />
-            ) : (
-              user?.user_metadata?.avatar_url && (
-                <img src={user.user_metadata.avatar_url as string} alt="" className="w-7 h-7 rounded-full" />
-              )
-            )}
+            <button onClick={() => navigate(`/trips/${trip.id}/settings`)} aria-label="旅伴" className="flex items-center">
+              {trip.members.length > 0 ? (
+                <AvatarStack members={trip.members} size={24} max={3} />
+              ) : (
+                user?.user_metadata?.avatar_url && (
+                  <img src={user.user_metadata.avatar_url as string} alt="" className="w-7 h-7 rounded-full" />
+                )
+              )}
+            </button>
+            <button
+              onClick={() => navigate(`/trips/${trip.id}/settings`)}
+              aria-label="旅程設定"
+              className="text-[#52707f] w-8 h-8 flex items-center justify-center"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+            </button>
           </div>
         </div>
         {/* 日期膠囊列:點一下直達該天 */}
@@ -104,7 +117,7 @@ export function TimelinePage() {
       </header>
 
       <main className="flex-1 overflow-y-auto px-4 py-4">
-        {tripStatus(trip.start_date, trip.end_date) === 'ongoing' && (
+        {isOngoing && (
           <div id="now-section">
             <NowSection days={days} eventsByDay={eventsByDay} onOpen={setDetailEvent} />
           </div>
@@ -122,7 +135,12 @@ export function TimelinePage() {
         </div>
       </main>
 
-      <TripNav tripId={trip.id} active="timeline" />
+      <TripNav
+        active={isOngoing ? 'today' : 'itinerary'}
+        todayDisabled={!isOngoing}
+        onToday={() => document.getElementById('now-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+        onTop={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      />
 
       <InstallPrompt />
 
