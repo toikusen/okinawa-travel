@@ -78,3 +78,11 @@ describe('ForkCard keyboard activation', () => {
     expect(onClick).toHaveBeenCalledWith(forkEvent)
   })
 })
+
+describe('ForkCard layout', () => {
+  it('stacks groups in a single column regardless of count', () => {
+    const { container } = render(<ForkCard event={forkEvent} onClick={vi.fn()} />)
+    const groups = container.querySelector('[data-testid="fork-groups"]')!
+    expect(groups.className).toContain('flex-col')
+  })
+})

@@ -74,7 +74,12 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
 
   if (!open) return null
 
-  const titleMissing = type === 'shared' && !title.trim()
+  const forkIncomplete = type === 'fork' && (
+    forks.length < 2 || forks.some(f => !f.person.trim() || !f.title.trim())
+  )
+  const blockedReason = type === 'shared'
+    ? (title.trim() ? null : '請輸入行程名稱')
+    : (forkIncomplete ? '每一組都要填人名和活動' : null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -93,7 +98,7 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
   }
 
   const handleSave = async () => {
-    if (titleMissing) return
+    if (blockedReason) return
     setSaving(true)
     try {
       let resolvedImageUrl: string | null = imageUrl
@@ -265,8 +270,8 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
               />
-              {titleMissing && (
-                <p className="text-[11px] text-[#dc2626] mt-1">請輸入行程名稱</p>
+              {blockedReason && type === 'shared' && (
+                <p className="text-[11px] text-[#dc2626] mt-1">{blockedReason}</p>
               )}
             </div>
             {timeFields}
@@ -316,6 +321,7 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
                       <input
                         className={`${inputCls} !bg-white`}
                         placeholder={`第 ${i + 1} 組`}
+                        aria-label={`第 ${i + 1} 組`}
                         value={item.person}
                         onChange={(e) => setForks(forks.map((f, j) => j === i ? { ...f, person: e.target.value } : f))}
                       />
@@ -354,6 +360,9 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
               >
                 ＋ 新增一組
               </button>
+              {blockedReason && type === 'fork' && (
+                <p className="text-[11px] text-[#dc2626]">{blockedReason}</p>
+              )}
             </div>
           </>
         )}
@@ -403,7 +412,7 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
         <div className="sticky bottom-0 bg-white pt-2 pb-4 -mb-4">
           <button
             onClick={handleSave}
-            disabled={saving || titleMissing}
+            disabled={saving || !!blockedReason}
             className="w-full bg-[#0077b6] text-white rounded-[10px] py-3 text-sm font-semibold disabled:opacity-60"
           >
             儲存

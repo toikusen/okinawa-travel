@@ -7,10 +7,10 @@ interface Props {
 }
 
 const GROUP_STYLES = [
-  'bg-[#f0f7ff] border-[#cce4f6]',
-  'bg-[#f8f9fa] border-[#e8edf2]',
-  'bg-[#f4f9f4] border-[#d4e8d4]',
-  'bg-[#fdf6ef] border-[#f0dcc4]',
+  'bg-[#f0f7ff] border-[#cce4f6] border-l-[#cce4f6]',
+  'bg-[#f8f9fa] border-[#e8edf2] border-l-[#e8edf2]',
+  'bg-[#f4f9f4] border-[#d4e8d4] border-l-[#d4e8d4]',
+  'bg-[#fdf6ef] border-[#f0dcc4] border-l-[#f0dcc4]',
 ]
 const NAME_COLORS = ['text-[#0077b6]', 'text-[#5a7a8a]', 'text-[#5b8a72]', 'text-[#b45309]']
 
@@ -35,10 +35,15 @@ export function ForkCard({ event, onClick }: Props) {
           分頭行動 · {event.time_start}–{event.time_end}
         </p>
       </div>
-      <div className={`gap-2 pl-8 pr-3 pb-3 ${items.length > 2 ? 'flex flex-col' : 'flex'}`}>
+      <div data-testid="fork-groups" className="flex flex-col gap-2 pl-8 pr-3 pb-3">
         {items.map((item, i) => (
-          <div key={i} className={`flex-1 border rounded-[8px] p-2 ${GROUP_STYLES[i % GROUP_STYLES.length]}`}>
-            <p className={`text-[10px] font-bold mb-1 ${NAME_COLORS[i % NAME_COLORS.length]}`}>{item.person}</p>
+          <div
+            key={i}
+            className={`border-l-[3px] border rounded-[8px] p-2 ${GROUP_STYLES[i % GROUP_STYLES.length]}`}
+          >
+            <span className={`inline-block text-[10px] font-bold mb-1 ${NAME_COLORS[i % NAME_COLORS.length]}`}>
+              {item.person}
+            </span>
             <p className="text-xs font-semibold text-[#1a2530]">{item.title}</p>
             {item.location && (
               <p className="text-[10px] text-[#5a7a8a] mt-0.5 flex items-center gap-1.5 flex-wrap">
