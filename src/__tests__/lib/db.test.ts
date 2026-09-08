@@ -32,6 +32,9 @@ import {
   listMyTrips,
   deleteTrip,
   updateTrip,
+  updateDayLabel,
+  updateEvent,
+  deleteEvent,
   dateRange,
   updateTripDates,
   removeMember,
@@ -162,7 +165,7 @@ describe('reorderEvents', () => {
     const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq })
     mockFrom.mockReturnValue({ update: mockUpdate })
 
-    await reorderEvents('trip-id', 'day-id', ['e1', 'e2', 'e3'])
+    const result = await reorderEvents('day-id', ['e1', 'e2', 'e3'])
 
     expect(mockUpdate).toHaveBeenCalledTimes(3)
     expect(mockUpdate).toHaveBeenCalledWith({ sort_order: 0 })
@@ -171,6 +174,7 @@ describe('reorderEvents', () => {
     expect(mockEq).toHaveBeenCalledWith('id', 'e1')
     expect(mockEq).toHaveBeenCalledWith('id', 'e2')
     expect(mockEq).toHaveBeenCalledWith('id', 'e3')
+    expect(result).toEqual({ ok: true })
   })
 })
 
@@ -420,5 +424,40 @@ describe('updateTripDates', () => {
     expect(result).toEqual({ ok: false, error: 'nope' })
     expect(daysInsert).not.toHaveBeenCalled()
     expect(tripsUpdateEq).not.toHaveBeenCalled()
+  })
+})
+
+describe('write results', () => {
+  it('updateTrip reports failure instead of swallowing the error', async () => {
+    const eq = vi.fn().mockResolvedValue({ error: { message: 'nope' } })
+    mockFrom.mockReturnValue({ update: vi.fn(() => ({ eq })) })
+    expect(await updateTrip('t1', { name: 'x' })).toEqual({ ok: false, error: 'nope' })
+  })
+
+  it('updateTrip reports success', async () => {
+    const eq = vi.fn().mockResolvedValue({ error: null })
+    mockFrom.mockReturnValue({ update: vi.fn(() => ({ eq })) })
+    expect(await updateTrip('t1', { name: 'x' })).toEqual({ ok: true })
+  })
+
+  it('updateDayLabel takes only dayId and reports failure', async () => {
+    const eq = vi.fn().mockResolvedValue({ error: { message: 'boom' } })
+    const update = vi.fn(() => ({ eq }))
+    mockFrom.mockReturnValue({ update })
+    expect(await updateDayLabel('d1', 'Day 1')).toEqual({ ok: false, error: 'boom' })
+    expect(update).toHaveBeenCalledWith({ label: 'Day 1' })
+    expect(eq).toHaveBeenCalledWith('id', 'd1')
+  })
+
+  it('updateEvent takes only eventId and reports success', async () => {
+    const eq = vi.fn().mockResolvedValue({ error: null })
+    mockFrom.mockReturnValue({ update: vi.fn(() => ({ eq })) })
+    expect(await updateEvent('e1', { title: 'x' })).toEqual({ ok: true })
+  })
+
+  it('deleteEvent takes only eventId and reports failure', async () => {
+    const eq = vi.fn().mockResolvedValue({ error: { message: 'denied' } })
+    mockFrom.mockReturnValue({ delete: vi.fn(() => ({ eq })) })
+    expect(await deleteEvent('e1')).toEqual({ ok: false, error: 'denied' })
   })
 })

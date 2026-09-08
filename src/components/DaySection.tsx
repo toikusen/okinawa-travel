@@ -110,13 +110,13 @@ export function DaySection({ day, tripId, members }: Props) {
     const oldIndex = events.findIndex((e) => e.id === active.id)
     const newIndex = events.findIndex((e) => e.id === over.id)
     const reordered = arrayMove(events, oldIndex, newIndex)
-    await reorderEvents(tripId, day.id, reordered.map((e) => e.id))
+    await reorderEvents(day.id, reordered.map((e) => e.id))
   }
 
   const handleLabelBlur = async () => {
     setEditingLabel(false)
     if (labelDraft !== day.label) {
-      await updateDayLabel(tripId, day.id, labelDraft)
+      await updateDayLabel(day.id, labelDraft)
     }
   }
 

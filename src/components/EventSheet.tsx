@@ -117,7 +117,7 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
         : { ...base, title: '', location: '', notes: '', fork_items: forks, image_url: resolvedImageUrl, link_url: sanitizeLinkUrl(linkUrl) }
 
       if (isEdit) {
-        await updateEvent(tripId, dayId, event!.id, data)
+        await updateEvent(event!.id, data)
       } else {
         const newId = await createEvent(tripId, dayId, { ...data, ...(preGeneratedId ? { id: preGeneratedId } : {}) })
         if (timeStart) {
@@ -127,7 +127,7 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
             const tb = b.time_start || '\xff'
             return ta.localeCompare(tb)
           })
-          await reorderEvents(tripId, dayId, sorted.map((e) => e.id))
+          await reorderEvents(dayId, sorted.map((e) => e.id))
         }
       }
 
@@ -144,7 +144,7 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
     if (!window.confirm('確定刪除？此動作無法復原。')) return
     setSaving(true)
     try {
-      await deleteEvent(tripId, dayId, event.id)
+      await deleteEvent(event.id)
       onClose()
     } catch {
       alert('刪除失敗，請重試')

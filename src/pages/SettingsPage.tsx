@@ -38,12 +38,9 @@ export function SettingsPage() {
 
   const handleSaveName = async () => {
     if (!tripId || !nameInput.trim() || nameInput.trim() === trip?.name) return
-    try {
-      await updateTrip(tripId, { name: nameInput.trim() })
-      flashSaved('name')
-    } catch {
-      window.alert('名稱儲存失敗,請再試一次。')
-    }
+    const result = await updateTrip(tripId, { name: nameInput.trim() })
+    if (result.ok) flashSaved('name')
+    else window.alert('名稱儲存失敗,請再試一次。')
   }
 
   const handleSaveDates = async () => {

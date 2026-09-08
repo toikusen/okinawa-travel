@@ -150,11 +150,14 @@ export async function getTripPreview(tripId: string): Promise<TripPreview | null
   return data as TripPreview
 }
 
+export type WriteResult = { ok: boolean; error?: string }
+
 export async function updateTrip(
   tripId: string,
   data: Partial<Pick<Trip, 'name' | 'start_date' | 'end_date'>>
-): Promise<void> {
-  await supabase.from('trips').update(data).eq('id', tripId)
+): Promise<WriteResult> {
+  const { error } = await supabase.from('trips').update(data).eq('id', tripId)
+  return error ? { ok: false, error: error.message } : { ok: true }
 }
 
 export async function deleteTrip(tripId: string): Promise<boolean> {
@@ -250,12 +253,9 @@ export function subscribeToDays(
   return () => { supabase.removeChannel(channel) }
 }
 
-export async function updateDayLabel(
-  _tripId: string,
-  dayId: string,
-  label: string
-): Promise<void> {
-  await supabase.from('days').update({ label }).eq('id', dayId)
+export async function updateDayLabel(dayId: string, label: string): Promise<WriteResult> {
+  const { error } = await supabase.from('days').update({ label }).eq('id', dayId)
+  return error ? { ok: false, error: error.message } : { ok: true }
 }
 
 // --- Events ---
@@ -298,32 +298,26 @@ export async function createEvent(
 }
 
 export async function updateEvent(
-  _tripId: string,
-  _dayId: string,
   eventId: string,
   data: Partial<Omit<TripEvent, 'id'>>
-): Promise<void> {
-  await supabase.from('events').update(data).eq('id', eventId)
+): Promise<WriteResult> {
+  const { error } = await supabase.from('events').update(data).eq('id', eventId)
+  return error ? { ok: false, error: error.message } : { ok: true }
 }
 
-export async function deleteEvent(
-  _tripId: string,
-  _dayId: string,
-  eventId: string
-): Promise<void> {
-  await supabase.from('events').delete().eq('id', eventId)
+export async function deleteEvent(eventId: string): Promise<WriteResult> {
+  const { error } = await supabase.from('events').delete().eq('id', eventId)
+  return error ? { ok: false, error: error.message } : { ok: true }
 }
 
-export async function reorderEvents(
-  _tripId: string,
-  _dayId: string,
-  orderedIds: string[]
-): Promise<void> {
-  await Promise.all(
+export async function reorderEvents(_dayId: string, orderedIds: string[]): Promise<WriteResult> {
+  const results = await Promise.all(
     orderedIds.map((id, i) =>
       supabase.from('events').update({ sort_order: i }).eq('id', id)
     )
   )
+  const failed = results.find(r => r.error)
+  return failed?.error ? { ok: false, error: failed.error.message } : { ok: true }
 }
 
 // Re-export TripMember so callers don't need to import from types directly
