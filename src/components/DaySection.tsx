@@ -9,7 +9,8 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { reorderEvents, updateDayLabel } from '../lib/db'
-import { fmtMD, todayStr } from '../lib/dates'
+import { fmtMD, todayStr, hhmm, nowLineIndex } from '../lib/dates'
+import { useNow } from '../hooks/useNow'
 import { EventCard } from './EventCard'
 import { ForkCard } from './ForkCard'
 import { EventSheet } from './EventSheet'
@@ -96,13 +97,10 @@ export function DaySection({ day, tripId, members, events }: Props) {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   )
 
-  // ponytail: now-line position computed at render; fresh enough on a live-synced page
-  const now = new Date()
+  const now = useNow()
   const isToday = day.date === todayStr(now)
-  const nowTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-  const nowIndex = isToday
-    ? events.filter((e) => e.time_start && e.time_start <= nowTime).length
-    : -1
+  const nowTime = hhmm(now)
+  const nowIndex = isToday ? nowLineIndex(events, nowTime) : -1
 
   const handleDragEnd = async ({ active, over }: DragEndEvent) => {
     if (!over || active.id === over.id) return

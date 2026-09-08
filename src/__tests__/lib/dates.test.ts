@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fmtMD, fmtChip, fmtRange, dayCount, daysUntil, tripStatus, todayStr, hhmm, sortTrips, mapsUrl } from '../../lib/dates'
+import { fmtMD, fmtChip, fmtRange, dayCount, daysUntil, tripStatus, todayStr, hhmm, sortTrips, mapsUrl, nowLineIndex } from '../../lib/dates'
 
 describe('dates', () => {
   it('formats YYYY-MM-DD as M/D (weekday)', () => {
@@ -77,5 +77,25 @@ describe('sortTrips', () => {
     expect(ongoing.map(x => x.id)).toEqual(['now'])
     expect(upcoming.map(x => x.id)).toEqual(['later'])
     expect(ended.map(x => x.id)).toEqual(['done'])
+  })
+})
+
+describe('nowLineIndex', () => {
+  it('inserts after the last already-started event even when the list is out of time order', () => {
+    // Dragged out of order: 14:00 sits before 09:00 in the list.
+    const events = [{ time_start: '14:00' }, { time_start: '09:00' }, { time_start: '18:00' }]
+    expect(nowLineIndex(events, '10:00')).toBe(2)
+  })
+
+  it('inserts at the front when nothing has started', () => {
+    expect(nowLineIndex([{ time_start: '09:00' }, { time_start: '12:00' }], '08:00')).toBe(0)
+  })
+
+  it('inserts at the end when everything has started', () => {
+    expect(nowLineIndex([{ time_start: '09:00' }, { time_start: '12:00' }], '23:00')).toBe(2)
+  })
+
+  it('ignores events without a start time', () => {
+    expect(nowLineIndex([{ time_start: '' }, { time_start: '09:00' }], '10:00')).toBe(2)
   })
 })

@@ -81,3 +81,13 @@ export function sortTrips<T extends { start_date: string; end_date: string }>(
 export function mapsUrl(location: string): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`
 }
+
+/** Where to insert the "now" line in a list ordered by sort_order, not time.
+ *  Answers: one past the last event that has already started. */
+export function nowLineIndex(events: { time_start: string }[], now: string): number {
+  let index = 0
+  events.forEach((e, i) => {
+    if (e.time_start && e.time_start <= now) index = i + 1
+  })
+  return index
+}
