@@ -13,8 +13,8 @@ export function SyncIndicator({ status }: { status: SyncStatus }) {
 
   return (
     <div className="flex items-center gap-1.5" role="status">
-      <span className="w-2 h-2 rounded-full bg-[#dc2626] shrink-0" />
-      <span className="text-[11px] text-[#dc2626] whitespace-nowrap">{text}</span>
+      <span className="w-2 h-2 rounded-full bg-danger shrink-0" />
+      <span className="text-[11px] text-danger whitespace-nowrap">{text}</span>
     </div>
   )
 }

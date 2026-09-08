@@ -9,11 +9,11 @@ export function InviteCard({ trip }: { trip: Trip }) {
   if (trip.members.length > 1) return null
 
   return (
-    <div className="bg-[#e3f1f9] rounded-[12px] px-4 py-3 mb-4 flex items-center gap-3">
-      <p className="flex-1 text-xs text-[#1a2530]">把連結傳給旅伴,一起排行程</p>
+    <div className="bg-bg-accent rounded-[12px] px-4 py-3 mb-4 flex items-center gap-3">
+      <p className="flex-1 text-xs text-text-strong">把連結傳給旅伴,一起排行程</p>
       <button
         onClick={share}
-        className="shrink-0 bg-[#0077b6] text-white text-xs font-semibold rounded-[8px] px-3 py-2 active:opacity-80"
+        className="shrink-0 bg-primary text-white text-xs font-semibold rounded-[8px] px-3 py-2 active:opacity-80"
       >
         分享邀請連結
       </button>

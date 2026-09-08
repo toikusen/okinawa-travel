@@ -93,39 +93,39 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f0f4f8] flex flex-col max-w-lg mx-auto">
-      <header className="bg-white border-b border-[#e8edf2] px-4 py-3 flex items-center gap-3 sticky top-0 z-10">
-        <button onClick={() => navigate(-1)} className="text-[#0077b6] -ml-2 w-11 h-11 -my-1.5 flex items-center justify-center" aria-label="返回">
+    <div className="min-h-screen bg-bg flex flex-col max-w-lg mx-auto">
+      <header className="bg-white border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0 z-10">
+        <button onClick={() => navigate(-1)} className="text-primary -ml-2 w-11 h-11 -my-1.5 flex items-center justify-center" aria-label="返回">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
-        <h1 className="text-base font-bold text-[#1a2530]">設定</h1>
+        <h1 className="text-base font-bold text-text-strong">設定</h1>
       </header>
 
       <main className="px-4 py-6 flex flex-col gap-4">
-        <section className="bg-white rounded-[12px] p-4 border border-[#e8edf2]">
+        <section className="bg-white rounded-[12px] p-4 border border-border">
           <div className="flex items-center justify-between mb-2">
-            <label htmlFor="trip-name" className="text-xs font-semibold text-[#52707f]">旅程名稱</label>
+            <label htmlFor="trip-name" className="text-xs font-semibold text-text-label">旅程名稱</label>
             {saved === 'name' && <SavedBadge />}
           </div>
           <input
             id="trip-name"
-            className="w-full border border-[#e8edf2] rounded-[8px] px-3 py-2 text-sm text-[#1a2530]"
+            className="w-full border border-border rounded-[8px] px-3 py-2 text-sm text-text-strong"
             value={nameInput}
             onChange={(e) => setNameInput(e.target.value)}
             onBlur={handleSaveName}
             onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
           />
           <div className="flex items-center justify-between mt-4 mb-2">
-            <p className="text-xs font-semibold text-[#52707f]">旅程日期</p>
+            <p className="text-xs font-semibold text-text-label">旅程日期</p>
             {saved === 'dates' && <SavedBadge />}
           </div>
           <div className="flex gap-2">
             <input
               type="date"
               aria-label="開始日期"
-              className="flex-1 border border-[#e8edf2] rounded-[8px] px-3 py-2 text-sm text-[#1a2530]"
+              className="flex-1 border border-border rounded-[8px] px-3 py-2 text-sm text-text-strong"
               value={dates.start}
               onChange={(e) => setDates(d => ({ ...d, start: e.target.value }))}
               onBlur={handleSaveDates}
@@ -134,35 +134,35 @@ export function SettingsPage() {
               type="date"
               aria-label="結束日期"
               min={dates.start || undefined}
-              className="flex-1 border border-[#e8edf2] rounded-[8px] px-3 py-2 text-sm text-[#1a2530]"
+              className="flex-1 border border-border rounded-[8px] px-3 py-2 text-sm text-text-strong"
               value={dates.end}
               onChange={(e) => setDates(d => ({ ...d, end: e.target.value }))}
               onBlur={handleSaveDates}
             />
           </div>
-          {dateError && <p className="text-xs text-[#dc2626] mt-2">{dateError}</p>}
+          {dateError && <p className="text-xs text-danger mt-2">{dateError}</p>}
         </section>
 
         {trip && <MembersSection trip={trip} currentEmail={user?.email} />}
 
-        <section className="bg-white rounded-[12px] p-4 border border-[#fecaca]">
-          <p className="text-xs font-semibold text-[#dc2626] mb-3">危險區</p>
+        <section className="bg-white rounded-[12px] p-4 border border-danger-border">
+          <p className="text-xs font-semibold text-danger mb-3">危險區</p>
           {isOwner ? (
             <>
               <button
                 onClick={() => setConfirm('delete')}
                 disabled={busy}
-                className="w-full bg-[#fee2e2] text-[#dc2626] rounded-[8px] py-2.5 text-sm font-semibold disabled:opacity-60"
+                className="w-full bg-danger-surface text-danger rounded-[8px] py-2.5 text-sm font-semibold disabled:opacity-60"
               >
                 {busy ? '刪除中...' : '刪除旅程'}
               </button>
-              <p className="text-[11px] text-[#52707f] mt-2">刪除前需輸入旅程名稱確認,所有行程與圖片將一併刪除。</p>
+              <p className="text-[11px] text-text-label mt-2">刪除前需輸入旅程名稱確認,所有行程與圖片將一併刪除。</p>
             </>
           ) : (
             <button
               onClick={() => setConfirm('leave')}
               disabled={busy}
-              className="w-full bg-[#fee2e2] text-[#dc2626] rounded-[8px] py-2.5 text-sm font-semibold disabled:opacity-60"
+              className="w-full bg-danger-surface text-danger rounded-[8px] py-2.5 text-sm font-semibold disabled:opacity-60"
             >
               {busy ? '退出中...' : '退出旅程'}
             </button>

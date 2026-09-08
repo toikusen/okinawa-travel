@@ -30,10 +30,10 @@ const TABS = [
 
 export function TripNav({ onToday, onTop, active, todayDisabled }: Props) {
   return (
-    <nav className="bg-white border-t border-[#e8edf2] flex sticky bottom-0 z-10 pb-[env(safe-area-inset-bottom)]">
+    <nav className="bg-white border-t border-border flex sticky bottom-0 z-10 pb-[env(safe-area-inset-bottom)]">
       {TABS.map((tab) => {
         const isActive = tab.key === active
-        const color = isActive ? '#0077b6' : '#8fa0b0'
+        const color = isActive ? 'var(--color-primary)' : 'var(--color-muted)'
         return (
           <button
             key={tab.key}
@@ -45,7 +45,7 @@ export function TripNav({ onToday, onTop, active, todayDisabled }: Props) {
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               {tab.icon}
             </svg>
-            <span className={`text-[10px] ${isActive ? 'font-bold text-[#0077b6]' : 'text-[#52707f]'}`}>
+            <span className={`text-[10px] ${isActive ? 'font-bold text-primary' : 'text-text-label'}`}>
               {tab.label}
             </span>
           </button>

@@ -1,4 +1,10 @@
-const FALLBACK_COLORS = ['#c9a25e', '#5b8a72', '#7c6da8', '#a86d6d', '#5a7a8a']
+const FALLBACK_COLORS = [
+  'var(--color-identity-1)',
+  'var(--color-identity-2)',
+  'var(--color-identity-3)',
+  'var(--color-identity-4)',
+  'var(--color-text-secondary)',
+]
 
 interface Props {
   members: { display_name: string; avatar_url: string }[]
@@ -40,7 +46,7 @@ export function AvatarStack({ members, size = 22, max = 4 }: Props) {
       {extra > 0 && (
         <span
           style={{ width: size, height: size, marginLeft: -size * 0.28, fontSize: size * 0.4 }}
-          className="rounded-full border-2 border-white bg-[#e8edf2] text-[#5a7a8a] font-bold flex items-center justify-center shrink-0"
+          className="rounded-full border-2 border-white bg-border text-text-secondary font-bold flex items-center justify-center shrink-0"
         >
           +{extra}
         </span>

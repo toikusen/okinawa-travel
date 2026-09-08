@@ -117,7 +117,7 @@ function SortableCard({
         aria-label="拖曳排序"
         className="absolute left-0 top-0 bottom-0 w-8 z-10 flex items-center justify-center touch-none cursor-grab active:cursor-grabbing"
       >
-        <span className="w-5 h-7 rounded-[5px] bg-[#f0f4f8] flex items-center justify-center text-[#8fa0b0]">
+        <span className="w-5 h-7 rounded-[5px] bg-bg flex items-center justify-center text-muted">
           <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor" aria-hidden="true">
             <circle cx="3" cy="3" r="1.4" /><circle cx="8" cy="3" r="1.4" />
             <circle cx="3" cy="8" r="1.4" /><circle cx="8" cy="8" r="1.4" />
@@ -137,9 +137,9 @@ function SortableCard({
 function NowLine({ time }: { time: string }) {
   return (
     <div className="flex items-center gap-2" data-testid="now-line">
-      <span className="shrink-0 w-2 h-2 rounded-full bg-[#dc2626]" />
-      <span className="h-0.5 flex-1 bg-[#dc2626] rounded-full" />
-      <span className="shrink-0 text-[10.5px] font-bold text-[#dc2626]">現在 {time}</span>
+      <span className="shrink-0 w-2 h-2 rounded-full bg-danger" />
+      <span className="h-0.5 flex-1 bg-danger rounded-full" />
+      <span className="shrink-0 text-[10.5px] font-bold text-danger">現在 {time}</span>
     </div>
   )
 }
@@ -199,12 +199,12 @@ export function DaySection({ day, tripId, members, events: incomingEvents }: Pro
     <section id={`day-${day.id}`} style={{ scrollMarginTop: 104 }}>
       {/* Day header */}
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-[13px] font-extrabold text-[#1a2530] whitespace-nowrap">{fmtMD(day.date)}</span>
+        <span className="text-[13px] font-extrabold text-text-strong whitespace-nowrap">{fmtMD(day.date)}</span>
         {editingLabel ? (
           <input
             autoFocus
             aria-label="日期標籤"
-            className="text-xs text-[#5a7a8a] bg-transparent border-b border-[#0077b6] outline-none flex-1 min-w-0"
+            className="text-xs text-text-secondary bg-transparent border-b border-primary outline-none flex-1 min-w-0"
             value={labelDraft}
             onChange={(e) => setLabelDraft(e.target.value)}
             onBlur={handleLabelBlur}
@@ -213,18 +213,18 @@ export function DaySection({ day, tripId, members, events: incomingEvents }: Pro
         ) : (
           <button
             onClick={() => setEditingLabel(true)}
-            className="text-xs text-[#52707f] flex-1 min-w-0 text-left truncate"
+            className="text-xs text-text-label flex-1 min-w-0 text-left truncate"
           >
             {day.label || '點擊新增標籤'}
           </button>
         )}
-        <div className="h-px flex-1 bg-[#e8edf2] shrink-0" />
+        <div className="h-px flex-1 bg-border shrink-0" />
         <button
           onClick={openCreate}
           aria-label="新增行程"
           className="w-11 h-11 -my-2 -mr-1.5 flex items-center justify-center shrink-0"
         >
-          <span className="w-8 h-8 rounded-[10px] bg-[#e3f1f9] text-[#0077b6] flex items-center justify-center">
+          <span className="w-8 h-8 rounded-[10px] bg-bg-accent text-primary flex items-center justify-center">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
               <path d="M12 5v14M5 12h14" />
             </svg>

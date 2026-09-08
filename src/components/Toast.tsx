@@ -22,7 +22,7 @@ export function Toast() {
   return (
     <div
       role="status"
-      className="fixed top-3 left-4 right-4 max-w-lg mx-auto z-[60] bg-[#1a2530] text-white text-sm rounded-[10px] px-4 py-2.5 shadow-lg"
+      className="fixed top-3 left-4 right-4 max-w-lg mx-auto z-[60] bg-text-strong text-white text-sm rounded-[10px] px-4 py-2.5 shadow-lg"
     >
       {message}
     </div>

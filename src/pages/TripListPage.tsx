@@ -29,33 +29,33 @@ function TripCard({ trip, onClick }: { trip: TripSummary; onClick: () => void })
   return (
     <button
       onClick={onClick}
-      className={`bg-white rounded-[12px] p-4 border border-[#e8edf2] text-left active:opacity-70 flex items-center gap-3 ${ended ? 'opacity-60' : ''}`}
+      className={`bg-white rounded-[12px] p-4 border border-border text-left active:opacity-70 flex items-center gap-3 ${ended ? 'opacity-60' : ''}`}
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <p className="text-sm font-bold text-[#1a2530] truncate">{trip.name}</p>
+          <p className="text-sm font-bold text-text-strong truncate">{trip.name}</p>
           {status === 'upcoming' && (
-            <span className="shrink-0 text-[10px] font-bold text-[#0077b6] bg-[#e3f1f9] rounded-full px-2 py-0.5">
+            <span className="shrink-0 text-[10px] font-bold text-primary bg-bg-accent rounded-full px-2 py-0.5">
               D-{daysUntil(trip.start_date)}
             </span>
           )}
           {status === 'ongoing' && (
-            <span className="shrink-0 text-[10px] font-bold text-[#15803d] bg-[#dcfce7] rounded-full px-2 py-0.5">
+            <span className="shrink-0 text-[10px] font-bold text-ok bg-ok-surface rounded-full px-2 py-0.5">
               進行中
             </span>
           )}
         </div>
-        <p className="text-xs text-[#52707f] mt-1">
+        <p className="text-xs text-text-label mt-1">
           {fmtRange(trip.start_date, trip.end_date)} · {dayCount(trip.start_date, trip.end_date)} 天
         </p>
         {!ended && trip.members.length > 0 && (
           <div className="flex items-center gap-1.5 mt-2">
             <AvatarStack members={trip.members} />
-            <span className="text-[11px] text-[#52707f]">{trip.members.length} 位旅伴</span>
+            <span className="text-[11px] text-text-label">{trip.members.length} 位旅伴</span>
           </div>
         )}
       </div>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b0c4d0" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden="true">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-icon-muted)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden="true">
         <path d="M9 18l6-6-6-6" />
       </svg>
     </button>
@@ -85,17 +85,17 @@ export function TripListPage() {
   const active = [...ongoing, ...upcoming]
 
   return (
-    <div className="min-h-screen bg-[#f0f4f8] flex flex-col max-w-lg mx-auto">
-      <header className="bg-white border-b border-[#e8edf2] px-4 py-3 flex items-center justify-between sticky top-0 z-10">
+    <div className="min-h-screen bg-bg flex flex-col max-w-lg mx-auto">
+      <header className="bg-white border-b border-border px-4 py-3 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-2">
           <Logo size={26} />
-          <span className="text-base font-bold text-[#1a2530]">Tabi</span>
+          <span className="text-base font-bold text-text-strong">Tabi</span>
         </div>
         <button onClick={() => setAccountOpen(true)} aria-label="帳號設定" className="w-11 h-11 -my-1.5 -mr-2 flex items-center justify-center active:opacity-70">
           {user?.user_metadata?.avatar_url ? (
             <img src={user.user_metadata.avatar_url as string} alt="" className="w-7 h-7 rounded-full" />
           ) : (
-            <span className="w-7 h-7 rounded-full bg-[#e3f1f9] text-[#0077b6] text-xs font-bold flex items-center justify-center">
+            <span className="w-7 h-7 rounded-full bg-bg-accent text-primary text-xs font-bold flex items-center justify-center">
               {(user?.user_metadata?.full_name as string || user?.email || '?').charAt(0).toUpperCase()}
             </span>
           )}
@@ -103,20 +103,20 @@ export function TripListPage() {
       </header>
 
       <main className="flex-1 px-4 py-4 pb-24 flex flex-col gap-3">
-        <h1 className="text-sm font-bold text-[#1a2530]">我的旅程</h1>
-        {trips === null && <p className="text-sm text-[#52707f] text-center py-8">載入中...</p>}
+        <h1 className="text-sm font-bold text-text-strong">我的旅程</h1>
+        {trips === null && <p className="text-sm text-text-label text-center py-8">載入中...</p>}
 
         {loadError && (
-          <p className="text-xs text-[#dc2626] text-center">無法載入旅程列表,請檢查網路連線</p>
+          <p className="text-xs text-danger text-center">無法載入旅程列表,請檢查網路連線</p>
         )}
 
         {trips?.length === 0 && !loadError && (
           <div className="flex flex-col items-center gap-4 py-12">
             <Logo size={44} />
-            <p className="text-sm text-[#52707f]">還沒有旅程</p>
+            <p className="text-sm text-text-label">還沒有旅程</p>
             <button
               onClick={() => navigate('/trips/new')}
-              className="bg-[#0077b6] text-white rounded-[10px] py-3 px-6 text-sm font-semibold active:opacity-80"
+              className="bg-primary text-white rounded-[10px] py-3 px-6 text-sm font-semibold active:opacity-80"
             >
               建立第一個旅程
             </button>
@@ -128,7 +128,7 @@ export function TripListPage() {
         ))}
 
         {ended.length > 0 && (
-          <p className="text-[11px] font-bold text-[#52707f] tracking-wide mt-2">已結束</p>
+          <p className="text-[11px] font-bold text-text-label tracking-wide mt-2">已結束</p>
         )}
         {ended.map((trip) => (
           <TripCard key={trip.id} trip={trip} onClick={() => navigate(`/trips/${trip.id}`)} />
@@ -139,7 +139,7 @@ export function TripListPage() {
         <button
           onClick={() => navigate('/trips/new')}
           aria-label="新增旅程"
-          className="fixed bottom-[calc(1.25rem+env(safe-area-inset-bottom))] right-[max(1.25rem,calc(50vw-16rem+1.25rem))] w-[52px] h-[52px] rounded-full bg-[#0077b6] text-white flex items-center justify-center shadow-[0_4px_14px_rgba(0,119,182,0.4)] active:opacity-80 z-20"
+          className="fixed bottom-[calc(1.25rem+env(safe-area-inset-bottom))] right-[max(1.25rem,calc(50vw-16rem+1.25rem))] w-[52px] h-[52px] rounded-full bg-primary text-white flex items-center justify-center shadow-[0_4px_14px_rgba(0,119,182,0.4)] active:opacity-80 z-20"
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
             <path d="M12 5v14M5 12h14" />

@@ -44,19 +44,19 @@ export function AccountSheet({ onClose }: { onClose: () => void }) {
           <img src={user.user_metadata.avatar_url as string} alt="" className="w-10 h-10 rounded-full" />
         )}
         <div className="min-w-0">
-          <p className="text-sm font-bold text-[#1a2530]">帳號設定</p>
-          <p className="text-xs text-[#52707f] truncate">{user?.email}</p>
+          <p className="text-sm font-bold text-text-strong">帳號設定</p>
+          <p className="text-xs text-text-label truncate">{user?.email}</p>
         </div>
       </div>
 
       <div className="flex items-center justify-between mb-2">
-        <label htmlFor="account-name" className="text-xs font-semibold text-[#52707f]">顯示名稱</label>
+        <label htmlFor="account-name" className="text-xs font-semibold text-text-label">顯示名稱</label>
         {saved && <SavedBadge />}
       </div>
       <div className="flex gap-2">
         <input
           id="account-name"
-          className="flex-1 min-w-0 border border-[#e8edf2] rounded-[8px] px-3 py-2 text-sm text-[#1a2530]"
+          className="flex-1 min-w-0 border border-border rounded-[8px] px-3 py-2 text-sm text-text-strong"
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSave()}
@@ -64,16 +64,16 @@ export function AccountSheet({ onClose }: { onClose: () => void }) {
         <button
           onClick={handleSave}
           disabled={!name.trim() || name.trim() === currentName}
-          className="shrink-0 bg-[#0077b6] text-white rounded-[8px] px-4 text-sm font-semibold disabled:opacity-40 active:opacity-80"
+          className="shrink-0 bg-primary text-white rounded-[8px] px-4 text-sm font-semibold disabled:opacity-40 active:opacity-80"
         >
           儲存
         </button>
       </div>
-      <p className="text-[11px] text-[#52707f] mt-1.5">旅伴會在成員列表看到這個名稱。</p>
+      <p className="text-[11px] text-text-label mt-1.5">旅伴會在成員列表看到這個名稱。</p>
 
       <button
         onClick={signOut}
-        className="w-full border border-[#e8edf2] bg-white text-[#5a7a8a] rounded-[8px] py-2.5 text-sm font-semibold active:opacity-70 mt-5"
+        className="w-full border border-border bg-white text-text-secondary rounded-[8px] py-2.5 text-sm font-semibold active:opacity-70 mt-5"
       >
         登出
       </button>

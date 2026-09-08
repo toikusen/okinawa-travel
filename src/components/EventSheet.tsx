@@ -162,8 +162,8 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
   }
 
   const inputCls =
-    'w-full border border-[#e8edf2] rounded-[8px] px-3 py-2 text-sm text-[#1a2530] bg-white focus:outline-none focus:border-[#0077b6]'
-  const labelCls = 'text-[11px] font-semibold text-[#52707f] mb-1 block'
+    'w-full border border-border rounded-[8px] px-3 py-2 text-sm text-text-strong bg-white focus:outline-none focus:border-primary'
+  const labelCls = 'text-[11px] font-semibold text-text-label mb-1 block'
 
   const timeFields = (
     <>
@@ -199,7 +199,7 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
               onClick={() => { setTimeStart(p.start); setTimeEnd(p.end) }}
               aria-pressed={active}
               className={`text-xs font-semibold rounded-full px-3 py-1.5 ${
-                active ? 'bg-[#0077b6] text-white' : 'bg-[#e3f1f9] text-[#0077b6]'
+                active ? 'bg-primary text-white' : 'bg-bg-accent text-primary'
               }`}
             >
               {p.label}
@@ -218,16 +218,16 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
       backdropTestId="sheet-backdrop"
       panelClassName="absolute bottom-0 left-0 right-0 bg-white rounded-t-[16px] px-4 pt-3 pb-4 max-h-[90vh] overflow-y-auto"
     >
-        <div className="w-9 h-1 bg-[#e8edf2] rounded-full mx-auto mb-3" />
+        <div className="w-9 h-1 bg-border rounded-full mx-auto mb-3" />
         <div className="flex items-center justify-between mb-4">
-          <p className="text-[15px] font-bold text-[#1a2530]">
+          <p className="text-[15px] font-bold text-text-strong">
             {isEdit ? '編輯行程' : '新增行程'}
           </p>
           {isEdit && (
             <button
               onClick={() => setConfirmDelete(true)}
               disabled={saving}
-              className="flex items-center gap-1.5 text-xs font-semibold text-[#dc2626] bg-[#fef2f2] rounded-[8px] px-2.5 py-1.5 disabled:opacity-60"
+              className="flex items-center gap-1.5 text-xs font-semibold text-danger bg-danger-surface-soft rounded-[8px] px-2.5 py-1.5 disabled:opacity-60"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
@@ -245,15 +245,15 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
               onClick={() => setType(t)}
               className={`flex-1 rounded-[8px] py-1.5 text-xs font-semibold transition-colors ${
                 type === t
-                  ? 'bg-[#0077b6] text-white'
-                  : 'bg-[#f0f4f8] text-[#5a7a8a]'
+                  ? 'bg-primary text-white'
+                  : 'bg-bg text-text-secondary'
               }`}
             >
               {t === 'shared' ? '共同行程' : '分頭行動'}
             </button>
           ))}
         </div>
-        <p className="text-[11px] text-[#52707f] -mt-2.5 mb-4">
+        <p className="text-[11px] text-text-label -mt-2.5 mb-4">
           {type === 'shared'
             ? '大家一起去的行程。'
             : '同一時段大家分開行動時使用,各組的安排分開記錄。'}
@@ -262,7 +262,7 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
         {type === 'shared' ? (
           <>
             <div className="mb-3">
-              <label htmlFor="ev-title" className={labelCls}>名稱 <span className="text-[#dc2626]">*</span></label>
+              <label htmlFor="ev-title" className={labelCls}>名稱 <span className="text-danger">*</span></label>
               <input
                 id="ev-title"
                 className={inputCls}
@@ -271,7 +271,7 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
                 onChange={(e) => setTitle(e.target.value)}
               />
               {blockedReason && type === 'shared' && (
-                <p className="text-[11px] text-[#dc2626] mt-1">{blockedReason}</p>
+                <p className="text-[11px] text-danger mt-1">{blockedReason}</p>
               )}
             </div>
             {timeFields}
@@ -301,7 +301,7 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
             {timeFields}
             <div className="flex flex-col gap-2 mb-2">
               {forks.map((item, i) => (
-                <div key={i} className="bg-[#f8f9fa] rounded-[8px] p-2 flex flex-col gap-1.5">
+                <div key={i} className="bg-surface-subtle rounded-[8px] p-2 flex flex-col gap-1.5">
                   <div className="flex items-center gap-1.5">
                     {members.length > 0 ? (
                       <select
@@ -330,7 +330,7 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
                       <button
                         onClick={() => setForks(forks.filter((_, j) => j !== i))}
                         aria-label={`移除第 ${i + 1} 組`}
-                        className="shrink-0 w-11 h-11 -my-1 -mr-1 flex items-center justify-center text-[#52707f]"
+                        className="shrink-0 w-11 h-11 -my-1 -mr-1 flex items-center justify-center text-text-label"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
                           <path d="M18 6L6 18M6 6l12 12" />
@@ -356,12 +356,12 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
               ))}
               <button
                 onClick={() => setForks([...forks, emptyFork()])}
-                className="w-full border border-dashed border-[#b0c4d0] rounded-[8px] py-2 text-xs font-semibold text-[#0077b6] mb-2"
+                className="w-full border border-dashed border-icon-muted rounded-[8px] py-2 text-xs font-semibold text-primary mb-2"
               >
                 ＋ 新增一組
               </button>
               {blockedReason && type === 'fork' && (
-                <p className="text-[11px] text-[#dc2626]">{blockedReason}</p>
+                <p className="text-[11px] text-danger">{blockedReason}</p>
               )}
             </div>
           </>
@@ -379,10 +379,10 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
           />
           {previewSrc ? (
             <div className="flex items-center gap-3">
-              <img src={previewSrc} alt="preview" className="w-16 h-16 rounded-[8px] object-cover border border-[#e8edf2]" />
+              <img src={previewSrc} alt="preview" className="w-16 h-16 rounded-[8px] object-cover border border-border" />
               <button
                 onClick={handleRemoveImage}
-                className="text-xs text-[#dc2626] font-semibold"
+                className="text-xs text-danger font-semibold"
               >
                 移除
               </button>
@@ -390,7 +390,7 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
           ) : (
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="w-full border border-dashed border-[#b0c4d0] rounded-[8px] py-3 text-sm text-[#52707f] flex items-center justify-center gap-1.5"
+              className="w-full border border-dashed border-icon-muted rounded-[8px] py-3 text-sm text-text-label flex items-center justify-center gap-1.5"
             >
               <span className="text-base">＋</span> 新增圖片
             </button>
@@ -413,7 +413,7 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
           <button
             onClick={handleSave}
             disabled={saving || !!blockedReason}
-            className="w-full bg-[#0077b6] text-white rounded-[10px] py-3 text-sm font-semibold disabled:opacity-60"
+            className="w-full bg-primary text-white rounded-[10px] py-3 text-sm font-semibold disabled:opacity-60"
           >
             儲存
           </button>

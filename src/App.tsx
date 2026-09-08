@@ -28,8 +28,8 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f0f4f8]">
-        <div className="text-[#52707f] text-sm">載入中...</div>
+      <div className="min-h-screen flex items-center justify-center bg-bg">
+        <div className="text-text-label text-sm">載入中...</div>
       </div>
     )
   }

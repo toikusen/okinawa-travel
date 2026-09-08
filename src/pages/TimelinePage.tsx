@@ -42,8 +42,8 @@ export function TimelinePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f0f4f8]">
-        <p className="text-sm text-[#52707f]">載入中...</p>
+      <div className="min-h-screen flex items-center justify-center bg-bg">
+        <p className="text-sm text-text-label">載入中...</p>
       </div>
     )
   }
@@ -60,16 +60,16 @@ export function TimelinePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f0f4f8] flex flex-col max-w-lg mx-auto">
-      <header className="bg-white border-b border-[#e8edf2] sticky top-0 z-10">
+    <div className="min-h-screen bg-bg flex flex-col max-w-lg mx-auto">
+      <header className="bg-white border-b border-border sticky top-0 z-10">
         <div className="px-4 pt-3 pb-2 flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
-            <button onClick={() => navigate('/')} className="text-[#0077b6] shrink-0 -ml-2 w-11 h-11 -my-1.5 flex items-center justify-center" aria-label="回旅程列表">
+            <button onClick={() => navigate('/')} className="text-primary shrink-0 -ml-2 w-11 h-11 -my-1.5 flex items-center justify-center" aria-label="回旅程列表">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M15 18l-6-6 6-6" />
               </svg>
             </button>
-            <h1 className="text-base font-bold text-[#1a2530] truncate">{trip.name}</h1>
+            <h1 className="text-base font-bold text-text-strong truncate">{trip.name}</h1>
           </div>
           <div className="flex items-center gap-2.5 shrink-0">
             <SyncIndicator status={syncStatus} />
@@ -85,7 +85,7 @@ export function TimelinePage() {
             <button
               onClick={() => navigate(`/trips/${trip.id}/settings`)}
               aria-label="旅程設定"
-              className="text-[#52707f] w-8 h-8 flex items-center justify-center"
+              className="text-text-label w-8 h-8 flex items-center justify-center"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <circle cx="12" cy="12" r="3" />
@@ -105,8 +105,8 @@ export function TimelinePage() {
                   onClick={() => scrollToDay(day.id)}
                   className={`shrink-0 rounded-full px-3.5 py-2 text-xs whitespace-nowrap ${
                     isActive
-                      ? 'bg-[#0077b6] text-white font-bold'
-                      : 'bg-[#f0f4f8] text-[#52707f] font-semibold'
+                      ? 'bg-primary text-white font-bold'
+                      : 'bg-bg text-text-label font-semibold'
                   }`}
                 >
                   {fmtChip(day.date)}

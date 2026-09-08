@@ -8,10 +8,34 @@
   --color-text-secondary: #5a7a8a;
   --color-text-label: #52707f;
   --color-danger: #dc2626;
+
+  --color-text-strong: #1a2530;
+  --color-bg-accent: #e3f1f9;
+  --color-surface-subtle: #f8f9fa;
+  --color-icon-muted: #b0c4d0;
+  --color-muted: #8fa0b0;
+  --color-danger-surface: #fee2e2;
+  --color-danger-surface-soft: #fef2f2;
+  --color-danger-border: #fecaca;
+  --color-ok: #15803d;
+  --color-ok-surface: #dcfce7;
+  --color-success: #22c55e;
+  --color-note-accent: #b8d4e8;
+  --color-fork-bg-1: #f0f7ff;
+  --color-fork-border-1: #cce4f6;
+  --color-fork-bg-3: #f4f9f4;
+  --color-fork-border-3: #d4e8d4;
+  --color-fork-bg-4: #fdf6ef;
+  --color-fork-border-4: #f0dcc4;
+  --color-identity-1: #c9a25e;
+  --color-identity-2: #5b8a72;
+  --color-identity-3: #7c6da8;
+  --color-identity-4: #a86d6d;
+  --color-identity-5: #b45309;
 }
 
 :focus-visible {
-  outline: 2px solid #0077b6;
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
@@ -20,6 +44,6 @@
 }
 
 body {
-  background-color: #f0f4f8;
+  background-color: var(--color-bg);
   -webkit-tap-highlight-color: transparent;
 }
