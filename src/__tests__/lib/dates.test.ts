@@ -155,4 +155,15 @@ describe('pickNow', () => {
     expect(result.current).toEqual([])
     expect(result.next).toEqual([])
   })
+
+  it('keeps a running event as current while falling back to tomorrow for next', () => {
+    const result = pickNow({
+      days,
+      eventsByDay: { d1: [ev('a', '09:00', '12:00')], d2: [ev('t', '08:00', '09:00')] },
+      now: new Date('2026-10-12T10:00:00'),
+    })
+    expect(result.current.map(e => e.id)).toEqual(['a'])
+    expect(result.next.map(e => e.id)).toEqual(['t'])
+    expect(result.nextLabel).toBe('明天')
+  })
 })
