@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { removeMember } from '../lib/db'
+import { toast } from '../lib/toast'
 import type { Trip } from '../types'
 
 interface Props {
@@ -42,7 +43,7 @@ export function MembersSection({ trip, currentEmail }: Props) {
     setRemoving(email)
     const ok = await removeMember(trip.id, email)
     setRemoving(null)
-    if (!ok) window.alert('移除失敗,請再試一次。')
+    if (!ok) toast('移除失敗,請再試一次')
   }
 
   return (

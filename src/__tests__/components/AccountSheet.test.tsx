@@ -12,6 +12,9 @@ vi.mock('../../lib/db', () => ({
   updateMyDisplayName: (...args: unknown[]) => mockUpdateMyDisplayName(...args),
 }))
 
+const mockToast = vi.fn()
+vi.mock('../../lib/toast', () => ({ toast: (...args: unknown[]) => mockToast(...args) }))
+
 import { AccountSheet } from '../../components/AccountSheet'
 
 beforeEach(() => {
@@ -67,16 +70,14 @@ describe('AccountSheet', () => {
     expect(button).toBeEnabled()
   })
 
-  it('alerts when saving fails', async () => {
+  it('toasts when saving fails', async () => {
     mockUpdateMyDisplayName.mockResolvedValue(false)
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
     render(<AccountSheet onClose={vi.fn()} />)
 
     fireEvent.change(screen.getByLabelText('顯示名稱'), { target: { value: '阿安' } })
     fireEvent.click(screen.getByText('儲存'))
 
-    await vi.waitFor(() => expect(alertSpy).toHaveBeenCalled())
-    alertSpy.mockRestore()
+    await vi.waitFor(() => expect(mockToast).toHaveBeenCalledWith('名稱儲存失敗,請再試一次'))
   })
 
   it('signs out from the sign-out button', () => {

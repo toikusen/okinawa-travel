@@ -3,8 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useTrip } from '../hooks/useTrip'
 import { updateTrip, updateTripDates, deleteTrip, removeMember } from '../lib/db'
+import { toast } from '../lib/toast'
 import { MembersSection } from '../components/MembersSection'
 import { SavedBadge } from '../components/SavedBadge'
+import { ConfirmSheet } from '../components/ConfirmSheet'
 
 export function SettingsPage() {
   const { user } = useAuth()
@@ -16,6 +18,7 @@ export function SettingsPage() {
   const [dateError, setDateError] = useState<string | null>(null)
   const [saved, setSaved] = useState<'name' | 'dates' | null>(null)
   const [busy, setBusy] = useState(false)
+  const [confirm, setConfirm] = useState<'leave' | 'delete' | null>(null)
   const savedTimer = useRef<ReturnType<typeof setTimeout>>()
 
   useEffect(() => {
@@ -40,7 +43,7 @@ export function SettingsPage() {
     if (!tripId || !nameInput.trim() || nameInput.trim() === trip?.name) return
     const result = await updateTrip(tripId, { name: nameInput.trim() })
     if (result.ok) flashSaved('name')
-    else window.alert('名稱儲存失敗,請再試一次。')
+    else toast('名稱儲存失敗,請再試一次')
   }
 
   const handleSaveDates = async () => {
@@ -60,14 +63,15 @@ export function SettingsPage() {
   }
 
   const handleLeave = async () => {
-    if (!tripId || !user?.email || !window.confirm('確定要退出這個旅程嗎?')) return
+    if (!tripId || !user?.email) return
+    setConfirm(null)
     setBusy(true)
     try {
       const ok = await removeMember(tripId, user.email)
       if (ok) navigate('/', { replace: true })
-      else window.alert('退出失敗,請再試一次。')
+      else toast('退出失敗,請再試一次')
     } catch {
-      window.alert('退出失敗,請再試一次。')
+      toast('退出失敗,請再試一次')
     } finally {
       setBusy(false)
     }
@@ -75,19 +79,14 @@ export function SettingsPage() {
 
   const handleDelete = async () => {
     if (!tripId || !trip) return
-    const typed = window.prompt(`此動作無法復原,所有行程與圖片將一併刪除。\n請輸入旅程名稱「${trip.name}」以確認刪除:`)
-    if (typed === null) return
-    if (typed.trim() !== trip.name) {
-      window.alert('名稱不符,已取消刪除。')
-      return
-    }
+    setConfirm(null)
     setBusy(true)
     try {
       const ok = await deleteTrip(tripId)
       if (ok) navigate('/', { replace: true })
-      else window.alert('刪除失敗,只有主揪可以刪除旅程。')
+      else toast('刪除失敗,只有主揪可以刪除旅程')
     } catch {
-      window.alert('刪除失敗,請再試一次。')
+      toast('刪除失敗,請再試一次')
     } finally {
       setBusy(false)
     }
@@ -151,7 +150,7 @@ export function SettingsPage() {
           {isOwner ? (
             <>
               <button
-                onClick={handleDelete}
+                onClick={() => setConfirm('delete')}
                 disabled={busy}
                 className="w-full bg-[#fee2e2] text-[#dc2626] rounded-[8px] py-2.5 text-sm font-semibold disabled:opacity-60"
               >
@@ -161,7 +160,7 @@ export function SettingsPage() {
             </>
           ) : (
             <button
-              onClick={handleLeave}
+              onClick={() => setConfirm('leave')}
               disabled={busy}
               className="w-full bg-[#fee2e2] text-[#dc2626] rounded-[8px] py-2.5 text-sm font-semibold disabled:opacity-60"
             >
@@ -170,6 +169,28 @@ export function SettingsPage() {
           )}
         </section>
       </main>
+
+      {confirm === 'delete' && trip && (
+        <ConfirmSheet
+          title="刪除旅程"
+          description="此動作無法復原,所有行程與圖片將一併刪除。"
+          confirmLabel="刪除旅程"
+          requireTypedText={trip.name}
+          destructive
+          onConfirm={handleDelete}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+      {confirm === 'leave' && (
+        <ConfirmSheet
+          title="確定要退出這個旅程?"
+          description="退出後就看不到這趟的行程了。"
+          confirmLabel="退出旅程"
+          destructive
+          onConfirm={handleLeave}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
     </div>
   )
 }

@@ -2,7 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 import type { TripEvent, ForkItem, TripMember } from '../types'
 import { createEvent, updateEvent, deleteEvent, reorderEvents } from '../lib/db'
 import { uploadEventImage } from '../lib/storage'
+import { toast } from '../lib/toast'
 import { BottomSheet } from './BottomSheet'
+import { ConfirmSheet } from './ConfirmSheet'
 
 interface Props {
   open: boolean
@@ -43,6 +45,7 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
   const [linkUrl, setLinkUrl] = useState('')
   const [previewSrc, setPreviewSrc] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -77,7 +80,7 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
     const file = e.target.files?.[0]
     if (!file) return
     if (file.size > 5 * 1024 * 1024) {
-      alert('圖片不能超過 5MB')
+      toast('圖片不能超過 5MB')
       return
     }
     setImageFile(file)
@@ -101,7 +104,7 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
         try {
           resolvedImageUrl = await uploadEventImage(tripId, preGeneratedId, imageFile)
         } catch {
-          alert('圖片上傳失敗，請重試')
+          toast('圖片上傳失敗,請再試一次')
           resolvedImageUrl = isEdit ? (event!.image_url ?? null) : null
         }
       }
@@ -133,7 +136,7 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
 
       onClose()
     } catch {
-      alert('儲存失敗，請重試')
+      toast('儲存失敗,請再試一次')
     } finally {
       setSaving(false)
     }
@@ -141,13 +144,13 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
 
   const handleDelete = async () => {
     if (!isEdit) return
-    if (!window.confirm('確定刪除？此動作無法復原。')) return
+    setConfirmDelete(false)
     setSaving(true)
     try {
       await deleteEvent(event.id)
       onClose()
     } catch {
-      alert('刪除失敗，請重試')
+      toast('刪除失敗,請再試一次')
     } finally {
       setSaving(false)
     }
@@ -203,6 +206,7 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
   )
 
   return (
+    <>
     <BottomSheet
       label={isEdit ? '編輯行程' : '新增行程'}
       onClose={onClose}
@@ -216,7 +220,7 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
           </p>
           {isEdit && (
             <button
-              onClick={handleDelete}
+              onClick={() => setConfirmDelete(true)}
               disabled={saving}
               className="flex items-center gap-1.5 text-xs font-semibold text-[#dc2626] bg-[#fef2f2] rounded-[8px] px-2.5 py-1.5 disabled:opacity-60"
             >
@@ -401,5 +405,16 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
           </button>
         </div>
     </BottomSheet>
+    {confirmDelete && (
+      <ConfirmSheet
+        title="確定刪除這個行程?"
+        description="此動作無法復原。"
+        confirmLabel="刪除"
+        destructive
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(false)}
+      />
+    )}
+    </>
   )
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { updateMyDisplayName } from '../lib/db'
+import { toast } from '../lib/toast'
 import { BottomSheet } from './BottomSheet'
 import { SavedBadge } from './SavedBadge'
 
@@ -27,7 +28,7 @@ export function AccountSheet({ onClose }: { onClose: () => void }) {
       clearTimeout(savedTimer.current)
       savedTimer.current = setTimeout(() => setSaved(false), 2000)
     } else {
-      window.alert('名稱儲存失敗,請再試一次。')
+      toast('名稱儲存失敗,請再試一次')
     }
   }
 

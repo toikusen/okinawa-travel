@@ -108,14 +108,15 @@ describe('EventSheet', () => {
     expect(screen.queryByPlaceholderText('第 3 組')).toBeNull()
   })
 
-  it('asks for confirmation before deleting', () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+  it('confirms deletion through ConfirmSheet, not window.confirm', () => {
+    const confirmSpy = vi.spyOn(window, 'confirm')
     render(
       <EventSheet open={true} event={sharedEvent} dayId="d1" tripId="t1" events={[sharedEvent]} onClose={() => {}} />
     )
     fireEvent.click(screen.getByText('刪除'))
-    expect(confirmSpy).toHaveBeenCalled()
+    expect(confirmSpy).not.toHaveBeenCalled()
     expect(deleteEvent).not.toHaveBeenCalled()
+    expect(screen.getByText('確定刪除這個行程?')).toBeInTheDocument()
     confirmSpy.mockRestore()
   })
 
