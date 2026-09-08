@@ -4,7 +4,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom'
 
 const mockUseTrip = vi.fn()
 vi.mock('../../hooks/useTrip', () => ({ useTrip: (id: string | null) => mockUseTrip(id) }))
-vi.mock('../../hooks/useSyncStatus', () => ({ useSyncStatus: () => 'synced' }))
+vi.mock('../../hooks/useSyncStatus', () => ({ useSyncStatus: () => 'connected' }))
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => ({ user: { email: 'sei@test.com', user_metadata: {} } }),
 }))

@@ -1,32 +1,24 @@
 import { useState, useEffect } from 'react'
+import { getChannelStatus, onChannelStatus, type ChannelStatus } from '../lib/realtime'
 
-export type SyncStatus = 'synced' | 'syncing' | 'offline'
+export type SyncStatus = ChannelStatus | 'offline'
 
 export function useSyncStatus(): SyncStatus {
   const [online, setOnline] = useState(navigator.onLine)
-  const [justCameOnline, setJustCameOnline] = useState(false)
+  const [channel, setChannel] = useState<ChannelStatus>(getChannelStatus)
 
   useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>
-
-    const handleOnline = () => {
-      setOnline(true)
-      setJustCameOnline(true)
-      timer = setTimeout(() => setJustCameOnline(false), 2000)
-    }
+    const handleOnline = () => setOnline(true)
     const handleOffline = () => setOnline(false)
-
     window.addEventListener('online', handleOnline)
     window.addEventListener('offline', handleOffline)
-
+    const off = onChannelStatus(setChannel)
     return () => {
       window.removeEventListener('online', handleOnline)
       window.removeEventListener('offline', handleOffline)
-      clearTimeout(timer)
+      off()
     }
   }, [])
 
-  if (!online) return 'offline'
-  if (justCameOnline) return 'syncing'
-  return 'synced'
+  return online ? channel : 'offline'
 }

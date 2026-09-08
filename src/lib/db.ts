@@ -1,4 +1,5 @@
 import { supabase } from '../supabase'
+import { reportChannelStatus } from './realtime'
 import type { Trip, TripMember, Day, TripEvent } from '../types'
 
 // --- Helpers ---
@@ -51,7 +52,7 @@ export function subscribeToTrip(
     .channel(`trip-${tripId}`)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'trips', filter: `id=eq.${tripId}` }, fetch)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'trip_members', filter: `trip_id=eq.${tripId}` }, fetch)
-    .subscribe()
+    .subscribe(reportChannelStatus)
 
   return () => { supabase.removeChannel(channel) }
 }
@@ -248,7 +249,7 @@ export function subscribeToDays(
   const channel = supabase
     .channel(`days-${tripId}`)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'days', filter: `trip_id=eq.${tripId}` }, fetch)
-    .subscribe()
+    .subscribe(reportChannelStatus)
 
   return () => { supabase.removeChannel(channel) }
 }
@@ -278,7 +279,7 @@ export function subscribeToEvents(
   const channel = supabase
     .channel(`events-${dayId}`)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'events', filter: `day_id=eq.${dayId}` }, fetch)
-    .subscribe()
+    .subscribe(reportChannelStatus)
 
   return () => { supabase.removeChannel(channel) }
 }
