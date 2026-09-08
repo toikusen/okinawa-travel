@@ -260,24 +260,28 @@ export async function updateDayLabel(dayId: string, label: string): Promise<Writ
 
 // --- Events ---
 
-export function subscribeToEvents(
-  _tripId: string,
-  dayId: string,
-  onEvents: (events: TripEvent[]) => void
+export function subscribeToTripEvents(
+  tripId: string,
+  onEvents: (byDay: Record<string, TripEvent[]>) => void
 ): () => void {
   const fetch = async () => {
     const { data } = await supabase
       .from('events')
       .select('*')
-      .eq('day_id', dayId)
+      .eq('trip_id', tripId)
       .order('sort_order')
-    onEvents((data ?? []) as TripEvent[])
+
+    const byDay: Record<string, TripEvent[]> = {}
+    for (const row of (data ?? []) as (TripEvent & { day_id: string })[]) {
+      (byDay[row.day_id] ??= []).push(row)
+    }
+    onEvents(byDay)
   }
   fetch()
 
   const channel = supabase
-    .channel(`events-${dayId}`)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'events', filter: `day_id=eq.${dayId}` }, fetch)
+    .channel(`trip-events-${tripId}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'events', filter: `trip_id=eq.${tripId}` }, fetch)
     .subscribe(reportChannelStatus)
 
   return () => { supabase.removeChannel(channel) }

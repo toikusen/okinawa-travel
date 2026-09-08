@@ -39,6 +39,7 @@ import {
   updateTripDates,
   removeMember,
   updateMyDisplayName,
+  subscribeToTripEvents,
 } from '../../lib/db'
 
 beforeEach(() => {
@@ -459,5 +460,36 @@ describe('write results', () => {
     const eq = vi.fn().mockResolvedValue({ error: { message: 'denied' } })
     mockFrom.mockReturnValue({ delete: vi.fn(() => ({ eq })) })
     expect(await deleteEvent('e1')).toEqual({ ok: false, error: 'denied' })
+  })
+})
+
+describe('subscribeToTripEvents', () => {
+  it('fetches every event for the trip and groups them by day', async () => {
+    const order = vi.fn().mockResolvedValue({
+      data: [
+        { id: 'e1', day_id: 'd1', title: 'A', sort_order: 0 },
+        { id: 'e2', day_id: 'd2', title: 'B', sort_order: 0 },
+        { id: 'e3', day_id: 'd1', title: 'C', sort_order: 1 },
+      ],
+    })
+    const eq = vi.fn(() => ({ order }))
+    mockFrom.mockReturnValue({ select: vi.fn(() => ({ eq })) })
+
+    const received: Record<string, unknown[]>[] = []
+    subscribeToTripEvents('t1', (byDay) => received.push(byDay))
+    await vi.waitFor(() => expect(received).toHaveLength(1))
+
+    expect(eq).toHaveBeenCalledWith('trip_id', 't1')
+    expect(Object.keys(received[0]).sort()).toEqual(['d1', 'd2'])
+    expect(received[0].d1).toHaveLength(2)
+    expect(received[0].d2).toHaveLength(1)
+  })
+
+  it('opens exactly one channel', () => {
+    const order = vi.fn().mockResolvedValue({ data: [] })
+    mockFrom.mockReturnValue({ select: vi.fn(() => ({ eq: vi.fn(() => ({ order })) })) })
+    mockChannel.mockClear()
+    subscribeToTripEvents('t1', () => {})
+    expect(mockChannel).toHaveBeenCalledOnce()
   })
 })

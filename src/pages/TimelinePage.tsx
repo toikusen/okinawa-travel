@@ -14,7 +14,7 @@ export function TimelinePage() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const { tripId } = useParams<{ tripId: string }>()
-  const { trip, days, loading } = useTrip(tripId ?? null)
+  const { trip, days, eventsByDay, loading } = useTrip(tripId ?? null)
   const syncStatus = useSyncStatus()
   const [activeDay, setActiveDay] = useState<string | null>(null)
 
@@ -140,7 +140,13 @@ export function TimelinePage() {
       <main className="flex-1 overflow-y-auto px-4 py-4">
         <div className="flex flex-col gap-6">
           {days.map((day) => (
-            <DaySection key={day.id} day={day} tripId={trip.id} members={trip.members} />
+            <DaySection
+              key={day.id}
+              day={day}
+              tripId={trip.id}
+              members={trip.members}
+              events={eventsByDay[day.id] ?? []}
+            />
           ))}
         </div>
       </main>

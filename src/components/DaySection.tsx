@@ -8,7 +8,6 @@ import {
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { useEvents } from '../hooks/useEvents'
 import { reorderEvents, updateDayLabel } from '../lib/db'
 import { fmtMD, todayStr } from '../lib/dates'
 import { EventCard } from './EventCard'
@@ -80,10 +79,10 @@ interface Props {
   day: Day
   tripId: string
   members: TripMember[]
+  events: TripEvent[]
 }
 
-export function DaySection({ day, tripId, members }: Props) {
-  const events = useEvents(tripId, day.id)
+export function DaySection({ day, tripId, members, events }: Props) {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<TripEvent | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)

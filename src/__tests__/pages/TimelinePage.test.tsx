@@ -30,6 +30,7 @@ describe('TimelinePage', () => {
     mockUseTrip.mockReturnValue({
       trip: { id: 't1', name: '沖繩 2026', owner_email: 'sei@test.com', members: [], start_date: '2026-08-01', end_date: '2026-08-02' },
       days: [{ id: 'd1', date: '2026-08-01', label: '', sort_order: 0 }],
+      eventsByDay: {},
       loading: false,
     })
 
@@ -41,7 +42,7 @@ describe('TimelinePage', () => {
   })
 
   it('redirects to / when the trip fails to load (not a member)', () => {
-    mockUseTrip.mockReturnValue({ trip: null, days: [], loading: false })
+    mockUseTrip.mockReturnValue({ trip: null, days: [], eventsByDay: {}, loading: false })
 
     renderAt('/trips/unknown')
 

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
-import { subscribeToTrip, subscribeToDays } from '../lib/db'
-import type { Trip, Day } from '../types'
+import { subscribeToTrip, subscribeToDays, subscribeToTripEvents } from '../lib/db'
+import type { Trip, Day, TripEvent } from '../types'
 
 const TRIP_CACHE = (id: string) => `sb_trip_${id}`
 const DAYS_CACHE = (id: string) => `sb_days_${id}`
+const EVENTS_CACHE = (id: string) => `sb_events_${id}`
 
 function readCache<T>(key: string): T | null {
   try {
@@ -20,6 +21,9 @@ export function useTrip(tripId: string | null) {
   )
   const [days, setDays] = useState<Day[]>(
     () => (tripId ? (readCache<Day[]>(DAYS_CACHE(tripId)) ?? []) : [])
+  )
+  const [eventsByDay, setEventsByDay] = useState<Record<string, TripEvent[]>>(
+    () => (tripId ? (readCache<Record<string, TripEvent[]>>(EVENTS_CACHE(tripId)) ?? {}) : {})
   )
   const [loading, setLoading] = useState<boolean>(
     () => !tripId ? false : !readCache(TRIP_CACHE(tripId ?? ''))
@@ -39,8 +43,13 @@ export function useTrip(tripId: string | null) {
       localStorage.setItem(DAYS_CACHE(tripId), JSON.stringify(d))
     })
 
-    return () => { tripUnsub(); daysUnsub() }
+    const eventsUnsub = subscribeToTripEvents(tripId, (e) => {
+      setEventsByDay(e)
+      localStorage.setItem(EVENTS_CACHE(tripId), JSON.stringify(e))
+    })
+
+    return () => { tripUnsub(); daysUnsub(); eventsUnsub() }
   }, [tripId])
 
-  return { trip, days, loading }
+  return { trip, days, eventsByDay, loading }
 }
