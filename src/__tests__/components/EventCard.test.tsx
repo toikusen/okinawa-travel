@@ -79,4 +79,29 @@ describe('EventCard empty time and location link', () => {
     expect(link).toHaveAttribute('target', '_blank')
     expect(link).toHaveAttribute('rel', 'noopener noreferrer')
   })
+
+  it('clicking the maps link does not also trigger the card onClick', () => {
+    const onClick = vi.fn()
+    render(<EventCard event={{ ...sharedEvent, location: '本部町' }} onClick={onClick} />)
+    const link = screen.getByRole('link', { name: '導航到 本部町' })
+    fireEvent.click(link)
+    expect(link).toBeInTheDocument()
+    expect(onClick).not.toHaveBeenCalled()
+  })
+})
+
+describe('EventCard keyboard activation', () => {
+  it('activates onClick when Enter is pressed on the card', () => {
+    const onClick = vi.fn()
+    render(<EventCard event={sharedEvent} onClick={onClick} />)
+    fireEvent.keyDown(screen.getByRole('button', { name: new RegExp(sharedEvent.title) }), { key: 'Enter' })
+    expect(onClick).toHaveBeenCalledWith(sharedEvent)
+  })
+
+  it('activates onClick when Space is pressed on the card', () => {
+    const onClick = vi.fn()
+    render(<EventCard event={sharedEvent} onClick={onClick} />)
+    fireEvent.keyDown(screen.getByRole('button', { name: new RegExp(sharedEvent.title) }), { key: ' ' })
+    expect(onClick).toHaveBeenCalledWith(sharedEvent)
+  })
 })

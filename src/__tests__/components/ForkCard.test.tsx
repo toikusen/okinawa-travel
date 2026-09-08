@@ -43,3 +43,38 @@ describe('ForkCard', () => {
     expect(onClick).toHaveBeenCalledWith(forkEvent)
   })
 })
+
+const forkEventWithLocation: TripEvent = {
+  ...forkEvent,
+  fork_items: [
+    { person: 'Sei', title: '參加活動', location: '本部町', notes: '' },
+    { person: '同事', title: '浦添 PARCO', location: '', notes: '' },
+  ],
+}
+
+describe('ForkCard maps link propagation', () => {
+  it('clicking a group maps link does not also trigger the card onClick', () => {
+    const onClick = vi.fn()
+    render(<ForkCard event={forkEventWithLocation} onClick={onClick} />)
+    const link = screen.getByRole('link', { name: '導航到 本部町' })
+    fireEvent.click(link)
+    expect(link).toBeInTheDocument()
+    expect(onClick).not.toHaveBeenCalled()
+  })
+})
+
+describe('ForkCard keyboard activation', () => {
+  it('activates onClick when Enter is pressed on the card', () => {
+    const onClick = vi.fn()
+    render(<ForkCard event={forkEvent} onClick={onClick} />)
+    fireEvent.keyDown(screen.getByRole('button'), { key: 'Enter' })
+    expect(onClick).toHaveBeenCalledWith(forkEvent)
+  })
+
+  it('activates onClick when Space is pressed on the card', () => {
+    const onClick = vi.fn()
+    render(<ForkCard event={forkEvent} onClick={onClick} />)
+    fireEvent.keyDown(screen.getByRole('button'), { key: ' ' })
+    expect(onClick).toHaveBeenCalledWith(forkEvent)
+  })
+})

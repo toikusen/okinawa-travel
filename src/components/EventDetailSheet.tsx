@@ -36,7 +36,9 @@ export function EventDetailSheet({ open, event, onClose, onEdit }: Props) {
           <div>
             {(event.time_start || event.time_end) && (
               <p className="text-xs text-[#52707f] mb-1">
-                {event.time_start} – {event.time_end}
+                {event.time_start && event.time_end
+                  ? `${event.time_start} – ${event.time_end}`
+                  : event.time_start || event.time_end}
               </p>
             )}
             <p className="text-[15px] font-bold text-[#1a2530]">

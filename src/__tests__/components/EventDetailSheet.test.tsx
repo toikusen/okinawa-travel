@@ -62,4 +62,10 @@ describe('EventDetailSheet', () => {
     render(<EventDetailSheet open={true} event={{ ...event, location: '本部町' }} onClose={() => {}} onEdit={() => {}} />)
     expect(screen.getByRole('link', { name: '導航到 本部町' })).toBeInTheDocument()
   })
+
+  it('shows only the start time when there is no end time', () => {
+    render(<EventDetailSheet open={true} event={{ ...event, time_start: '09:00', time_end: '' }} onClose={() => {}} onEdit={() => {}} />)
+    expect(screen.getByText('09:00')).toBeInTheDocument()
+    expect(screen.queryByText('–', { exact: false })).not.toBeInTheDocument()
+  })
 })
