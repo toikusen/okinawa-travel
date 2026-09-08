@@ -49,3 +49,8 @@ export function tripStatus(start: string, end: string, today = todayStr()): Trip
   if (today > end) return 'ended'
   return 'ongoing'
 }
+
+/** Date → 'HH:MM' */
+export function hhmm(d: Date): string {
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fmtMD, fmtChip, fmtRange, dayCount, daysUntil, tripStatus, todayStr } from '../../lib/dates'
+import { fmtMD, fmtChip, fmtRange, dayCount, daysUntil, tripStatus, todayStr, hhmm } from '../../lib/dates'
 
 describe('dates', () => {
   it('formats YYYY-MM-DD as M/D (weekday)', () => {
@@ -36,5 +36,10 @@ describe('dates', () => {
 
   it('formats today as YYYY-MM-DD', () => {
     expect(todayStr(new Date(2026, 6, 12))).toBe('2026-07-12')
+  })
+
+  it('hhmm zero-pads hours and minutes', () => {
+    expect(hhmm(new Date('2026-10-12T09:05:00'))).toBe('09:05')
+    expect(hhmm(new Date('2026-10-12T18:45:00'))).toBe('18:45')
   })
 })
