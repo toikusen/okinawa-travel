@@ -188,4 +188,20 @@ describe('EventSheet', () => {
 
     expect(screen.getByText('儲存')).toBeEnabled()
   })
+
+  it('treats whitespace-only fields as empty', () => {
+    render(
+      <EventSheet open={true} event={null} dayId="d1" tripId="t1" events={[]} onClose={() => {}} />
+    )
+    fireEvent.click(screen.getByText('分頭行動'))
+
+    // Group 1's person is whitespace-only; everything else is filled with real text.
+    fireEvent.change(screen.getByLabelText('第 1 組'), { target: { value: '   ' } })
+    fireEvent.change(screen.getByLabelText('第 1 組活動'), { target: { value: '潛水' } })
+    fireEvent.change(screen.getByLabelText('第 2 組'), { target: { value: 'B' } })
+    fireEvent.change(screen.getByLabelText('第 2 組活動'), { target: { value: '購物' } })
+
+    expect(screen.getByText('儲存')).toBeDisabled()
+    expect(screen.getByText('每一組都要填人名和活動')).toBeInTheDocument()
+  })
 })
