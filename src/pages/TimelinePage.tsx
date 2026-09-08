@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, Navigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useTrip } from '../hooks/useTrip'
 import { useSyncStatus } from '../hooks/useSyncStatus'
-import { fmtChip, todayStr, tripStatus } from '../lib/dates'
+import { fmtChip, scrollTargetEventId, todayStr, tripStatus } from '../lib/dates'
 import { SyncIndicator } from '../components/SyncIndicator'
 import { AvatarStack } from '../components/AvatarStack'
 import { TripNav } from '../components/TripNav'
@@ -22,60 +22,22 @@ export function TimelinePage() {
   const [activeDay, setActiveDay] = useState<string | null>(null)
   const [detailEvent, setDetailEvent] = useState<TripEvent | null>(null)
 
+  const scrolledRef = useRef(false)
+
   useEffect(() => {
-    if (!days.length) return
+    if (scrolledRef.current || !days.length) return
 
-    const now = new Date()
-    const today = todayStr(now)
+    const targetId = scrollTargetEventId({ days, eventsByDay, now: new Date() })
+    if (!targetId) return
 
-    const toMinutes = (t: string) => {
-      const [h, m] = t.split(':').map(Number)
-      return (h || 0) * 60 + (m || 0)
-    }
-    const currentMinutes = now.getHours() * 60 + now.getMinutes()
+    const el = document.getElementById(`event-${targetId}`)
+    if (!el) return
 
-    let attempts = 0
-    let timer: ReturnType<typeof setTimeout>
-
-    const tryScroll = () => {
-      const todayEvents = Array.from(
-        document.querySelectorAll<HTMLElement>(`[data-date="${today}"]`)
-      ).sort((a, b) => toMinutes(a.dataset.timeStart ?? '') - toMinutes(b.dataset.timeStart ?? ''))
-
-      if (!todayEvents.length) {
-        if (attempts < 10) {
-          attempts++
-          timer = setTimeout(tryScroll, 300)
-        }
-        return
-      }
-
-      let target: HTMLElement | null = null
-      let lastPast: HTMLElement | null = null
-
-      for (const el of todayEvents) {
-        const minutes = toMinutes(el.dataset.timeStart ?? '')
-        if (minutes <= currentMinutes) {
-          lastPast = el
-        } else {
-          target = el
-          break
-        }
-      }
-
-      // 優先顯示目前正在進行的行程；若還沒開始，顯示下一個
-      const scrollTarget = lastPast ?? target ?? todayEvents[0]
-      if (scrollTarget) {
-        const headerHeight = document.querySelector('header')?.getBoundingClientRect().height ?? 96
-        scrollTarget.style.scrollMarginTop = `${headerHeight + 8}px`
-        scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }
-    }
-
-    timer = setTimeout(tryScroll, 300)
-
-    return () => clearTimeout(timer)
-  }, [days.length])
+    scrolledRef.current = true
+    const headerHeight = document.querySelector('header')?.getBoundingClientRect().height ?? 96
+    el.style.scrollMarginTop = `${headerHeight + 8}px`
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [days, eventsByDay])
 
   if (loading) {
     return (

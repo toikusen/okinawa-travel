@@ -8,7 +8,13 @@ vi.mock('../../hooks/useSyncStatus', () => ({ useSyncStatus: () => 'connected' }
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => ({ user: { email: 'sei@test.com', user_metadata: {} } }),
 }))
-vi.mock('../../components/DaySection', () => ({ DaySection: () => <div data-testid="day-section" /> }))
+vi.mock('../../components/DaySection', () => ({
+  DaySection: ({ events }: { events: { id: string }[] }) => (
+    <div data-testid="day-section">
+      {events.map(e => <div key={e.id} id={`event-${e.id}`} />)}
+    </div>
+  ),
+}))
 vi.mock('../../components/SyncIndicator', () => ({ SyncIndicator: () => null }))
 vi.mock('../../components/InstallPrompt', () => ({ InstallPrompt: () => null }))
 
@@ -47,5 +53,32 @@ describe('TimelinePage', () => {
     renderAt('/trips/unknown')
 
     expect(screen.getByTestId('trip-list')).toBeInTheDocument()
+  })
+
+  it('scrolls to the first event that has not ended', () => {
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-10-12T10:00:00'))
+
+    try {
+      mockUseTrip.mockReturnValue({
+        trip: { id: 't1', name: '沖繩', owner_email: 'sei@test.com', members: [], start_date: '2026-10-12', end_date: '2026-10-13' },
+        days: [{ id: 'd1', date: '2026-10-12', label: '', sort_order: 0 }],
+        eventsByDay: {
+          d1: [
+            { id: 'done', type: 'shared', title: 'x', time_start: '07:00', time_end: '08:00', location: '', notes: '', sort_order: 0 },
+            { id: 'live', type: 'shared', title: 'y', time_start: '09:00', time_end: '12:00', location: '', notes: '', sort_order: 1 },
+          ],
+        },
+        loading: false,
+      })
+
+      renderAt('/trips/t1')
+      expect(document.getElementById('event-live')).toBeTruthy()
+      expect(scrollIntoView).toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

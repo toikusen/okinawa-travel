@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fmtMD, fmtChip, fmtRange, dayCount, daysUntil, tripStatus, todayStr, hhmm, sortTrips, mapsUrl, nowLineIndex, pickNow } from '../../lib/dates'
+import { fmtMD, fmtChip, fmtRange, dayCount, daysUntil, tripStatus, todayStr, hhmm, sortTrips, mapsUrl, nowLineIndex, pickNow, scrollTargetEventId } from '../../lib/dates'
 
 describe('dates', () => {
   it('formats YYYY-MM-DD as M/D (weekday)', () => {
@@ -165,5 +165,44 @@ describe('pickNow', () => {
     expect(result.current.map(e => e.id)).toEqual(['a'])
     expect(result.next.map(e => e.id)).toEqual(['t'])
     expect(result.nextLabel).toBe('明天')
+  })
+})
+
+describe('scrollTargetEventId', () => {
+  const days = [{ id: 'd1', date: '2026-10-12', label: '', sort_order: 0 }]
+  const ev = (id: string, s: string, e: string) => ({
+    id, type: 'shared' as const, title: id, time_start: s, time_end: e,
+    location: '', notes: '', sort_order: 0,
+  })
+
+  it('picks the first event that has not ended yet', () => {
+    const target = scrollTargetEventId({
+      days,
+      eventsByDay: { d1: [ev('done', '07:00', '08:00'), ev('live', '09:00', '12:00'), ev('later', '14:00', '16:00')] },
+      now: new Date('2026-10-12T10:00:00'),
+    })
+    expect(target).toBe('live')
+  })
+
+  it('does not pick an event that already ended', () => {
+    const target = scrollTargetEventId({
+      days,
+      eventsByDay: { d1: [ev('morning', '07:00', '08:00'), ev('evening', '19:00', '21:00')] },
+      now: new Date('2026-10-12T10:00:00'),
+    })
+    expect(target).toBe('evening')
+  })
+
+  it('falls back to the first event of today when all have ended', () => {
+    const target = scrollTargetEventId({
+      days,
+      eventsByDay: { d1: [ev('a', '07:00', '08:00'), ev('b', '09:00', '10:00')] },
+      now: new Date('2026-10-12T23:00:00'),
+    })
+    expect(target).toBe('a')
+  })
+
+  it('returns null when today is not part of the trip', () => {
+    expect(scrollTargetEventId({ days, eventsByDay: {}, now: new Date('2026-11-01T10:00:00') })).toBeNull()
   })
 })

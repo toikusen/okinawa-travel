@@ -20,11 +20,9 @@ import type { Day, TripEvent, TripMember } from '../types'
 function SortableCard({
   event,
   onOpen,
-  dayDate,
 }: {
   event: TripEvent
   onOpen: (e: TripEvent) => void
-  dayDate: string
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: event.id })
@@ -38,10 +36,9 @@ function SortableCard({
   return (
     <div
       ref={setNodeRef}
+      id={`event-${event.id}`}
       style={style}
       className="relative"
-      data-date={dayDate}
-      data-time-start={event.time_start}
     >
       {/* 拖曳把手：立即可拖，卡片本體維持點擊 */}
       <span
@@ -178,7 +175,7 @@ export function DaySection({ day, tripId, members, events }: Props) {
             {events.map((event, i) => (
               <span key={event.id} className="contents">
                 {i === nowIndex && <NowLine time={nowTime} />}
-                <SortableCard event={event} onOpen={openDetail} dayDate={day.date} />
+                <SortableCard event={event} onOpen={openDetail} />
               </span>
             ))}
             {nowIndex === events.length && events.length > 0 && <NowLine time={nowTime} />}

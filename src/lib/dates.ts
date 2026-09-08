@@ -124,3 +124,24 @@ export function pickNow({ days, eventsByDay, now }: {
 
   return { current, next: firstTomorrow, nextLabel: '明天' }
 }
+
+/** The event to bring into view on open: the first one today that has not ended.
+ *  Falls back to today's first event; null when today is outside the trip. */
+export function scrollTargetEventId({ days, eventsByDay, now }: {
+  days: Day[]
+  eventsByDay: Record<string, TripEvent[]>
+  now: Date
+}): string | null {
+  const today = todayStr(now)
+  const day = days.find(d => d.date === today)
+  if (!day) return null
+
+  const byTime = [...(eventsByDay[day.id] ?? [])]
+    .filter(e => e.time_start)
+    .sort((a, b) => a.time_start.localeCompare(b.time_start))
+  if (!byTime.length) return null
+
+  const time = hhmm(now)
+  const live = byTime.find(e => (e.time_end || e.time_start) > time)
+  return (live ?? byTime[0]).id
+}
