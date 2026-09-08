@@ -17,7 +17,6 @@ describe('useNow', () => {
     vi.setSystemTime(new Date('2026-10-12T09:30:00'))
     const { result } = renderHook(() => useNow())
     act(() => {
-      vi.setSystemTime(new Date('2026-10-12T09:31:00'))
       vi.advanceTimersByTime(60_000)
     })
     expect(result.current.getMinutes()).toBe(31)
