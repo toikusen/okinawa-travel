@@ -139,7 +139,7 @@ export function TripListPage() {
         <button
           onClick={() => navigate('/trips/new')}
           aria-label="新增旅程"
-          className="fixed bottom-5 right-[max(1.25rem,calc(50vw-16rem+1.25rem))] w-[52px] h-[52px] rounded-full bg-[#0077b6] text-white flex items-center justify-center shadow-[0_4px_14px_rgba(0,119,182,0.4)] active:opacity-80 z-20"
+          className="fixed bottom-[calc(1.25rem+env(safe-area-inset-bottom))] right-[max(1.25rem,calc(50vw-16rem+1.25rem))] w-[52px] h-[52px] rounded-full bg-[#0077b6] text-white flex items-center justify-center shadow-[0_4px_14px_rgba(0,119,182,0.4)] active:opacity-80 z-20"
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
             <path d="M12 5v14M5 12h14" />
