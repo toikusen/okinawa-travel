@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors,
   type DragEndEvent,
@@ -25,6 +25,65 @@ export function applyReorder(events: TripEvent[], activeId: string, overId: stri
   const to = events.findIndex((e) => e.id === overId)
   if (from < 0 || to < 0) return events
   return arrayMove(events, from, to)
+}
+
+/**
+ * Optimistic drag-reorder state, extracted from DaySection so the
+ * in-flight-write race can be exercised directly in tests (real dnd-kit
+ * drags are unreliable in jsdom).
+ *
+ * `incomingEvents` is the server-derived list; it can get a new array
+ * reference for reasons unrelated to this day's own reorder (e.g. a
+ * realtime push triggered by another day's event changing — see
+ * `subscribeToTripEvents` in `lib/db.ts`, which refetches the whole trip on
+ * any change). `writingRef` guards against that: while this day's own
+ * `reorderEvents` write is in flight, an incoming prop change must not wipe
+ * out the optimistic order, or the list flickers back and then forward
+ * again once the write's own realtime push lands.
+ */
+export function useReorderState(incomingEvents: TripEvent[], dayId: string) {
+  const [pendingOrder, setPendingOrder] = useState<TripEvent[] | null>(null)
+  const writingRef = useRef(false)
+  const incomingRef = useRef(incomingEvents)
+  const events = pendingOrder ?? incomingEvents
+
+  useEffect(() => {
+    incomingRef.current = incomingEvents
+    // A write for this day is still in flight — its own realtime push may
+    // land before the RPC promise resolves. Keep the optimistic order until
+    // the write settles (see the success branch below).
+    if (writingRef.current) return
+    setPendingOrder(null)
+  }, [incomingEvents])
+
+  const handleDragEnd = async ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) return
+    const reordered = applyReorder(events, String(active.id), String(over.id))
+    if (reordered === events) return
+
+    setPendingOrder(reordered)
+    writingRef.current = true
+    try {
+      const result = await reorderEvents(dayId, reordered.map((e) => e.id))
+      if (!result.ok) {
+        setPendingOrder(null)
+        toast('排序沒有存成功,已還原')
+        return
+      }
+      // The realtime push for this write may already have landed while we
+      // were waiting, in which case incomingEvents already matches — settle
+      // instead of leaving the optimistic copy around indefinitely.
+      const latest = incomingRef.current
+      const matches =
+        latest.length === reordered.length &&
+        latest.every((e, i) => e.id === reordered[i].id)
+      if (matches) setPendingOrder(null)
+    } finally {
+      writingRef.current = false
+    }
+  }
+
+  return { events, handleDragEnd }
 }
 
 function SortableCard({
@@ -99,11 +158,7 @@ export function DaySection({ day, tripId, members, events: incomingEvents }: Pro
   const [detailEvent, setDetailEvent] = useState<TripEvent | null>(null)
   const [editingLabel, setEditingLabel] = useState(false)
   const [labelDraft, setLabelDraft] = useState(day.label)
-  const [pendingOrder, setPendingOrder] = useState<TripEvent[] | null>(null)
-  const events = pendingOrder ?? incomingEvents
-
-  // A realtime refetch is the authoritative answer; drop the local guess.
-  useEffect(() => { setPendingOrder(null) }, [incomingEvents])
+  const { events, handleDragEnd } = useReorderState(incomingEvents, day.id)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 3 } }),
@@ -115,19 +170,6 @@ export function DaySection({ day, tripId, members, events: incomingEvents }: Pro
   const isToday = day.date === todayStr(now)
   const nowTime = hhmm(now)
   const nowIndex = isToday ? nowLineIndex(events, nowTime) : -1
-
-  const handleDragEnd = async ({ active, over }: DragEndEvent) => {
-    if (!over || active.id === over.id) return
-    const reordered = applyReorder(events, String(active.id), String(over.id))
-    if (reordered === events) return
-
-    setPendingOrder(reordered)
-    const result = await reorderEvents(day.id, reordered.map((e) => e.id))
-    if (!result.ok) {
-      setPendingOrder(null)
-      toast('排序沒有存成功,已還原')
-    }
-  }
 
   const handleLabelBlur = async () => {
     setEditingLabel(false)

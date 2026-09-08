@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, renderHook, act } from '@testing-library/react'
 
 vi.mock('../../lib/db', () => ({
   reorderEvents: vi.fn(async () => ({ ok: true })),
@@ -10,7 +10,8 @@ vi.mock('../../components/EventSheet', () => ({ EventSheet: () => null }))
 vi.mock('../../components/EventDetailSheet', () => ({ EventDetailSheet: () => null }))
 vi.mock('../../hooks/useNow', () => ({ useNow: () => new Date('2026-10-12T10:00:00') }))
 
-import { DaySection, applyReorder } from '../../components/DaySection'
+import { DaySection, applyReorder, useReorderState } from '../../components/DaySection'
+import { reorderEvents } from '../../lib/db'
 
 const day = { id: 'd1', date: '2026-10-12', label: '', sort_order: 0 }
 const ev = (id: string, time_start: string) => ({
@@ -53,5 +54,80 @@ describe('applyReorder', () => {
   it('applyReorder returns the original list when either id is unknown', () => {
     const list = [ev('a', '09:00')]
     expect(applyReorder(list, 'a', 'zzz')).toBe(list)
+  })
+})
+
+// dnd-kit drags are unreliable to simulate in jsdom (see applyReorder above),
+// so the optimistic-reorder state is exercised directly via the hook that
+// DaySection uses internally.
+describe('useReorderState', () => {
+  it('keeps the optimistic order when an unrelated prop update arrives while the write is in flight', async () => {
+    let resolveWrite: (result: { ok: boolean }) => void = () => {}
+    vi.mocked(reorderEvents).mockImplementation(
+      () => new Promise((resolve) => { resolveWrite = resolve })
+    )
+
+    const initial = [ev('a', '09:00'), ev('b', '10:00'), ev('c', '11:00')]
+    const { result, rerender } = renderHook(
+      ({ events }) => useReorderState(events, 'd1'),
+      { initialProps: { events: initial } }
+    )
+
+    // Fire the drag-end handler but don't await its completion here — it
+    // awaits the (still-pending) reorderEvents() promise. The synchronous
+    // portion (setPendingOrder + starting the write) runs and flushes
+    // within this act() call.
+    act(() => {
+      void result.current.handleDragEnd({
+        active: { id: 'c' }, over: { id: 'a' },
+      } as unknown as Parameters<typeof result.current.handleDragEnd>[0])
+    })
+    expect(result.current.events.map((e) => e.id)).toEqual(['c', 'a', 'b'])
+
+    // Another day's event changed: a brand-new array reference with the
+    // same, still-unswapped content for this day (this day's write hasn't
+    // resolved yet, so the server still reports the pre-drag order).
+    rerender({ events: [...initial] })
+
+    // The optimistic order must survive — this is the bug: without the
+    // in-flight guard the effect clears pendingOrder here and the list
+    // snaps back to ['a', 'b', 'c'].
+    expect(result.current.events.map((e) => e.id)).toEqual(['c', 'a', 'b'])
+
+    await act(async () => { resolveWrite({ ok: true }) })
+  })
+
+  it('settles the optimistic order once its own write succeeds and the server catches up', async () => {
+    let resolveWrite: (result: { ok: boolean }) => void = () => {}
+    vi.mocked(reorderEvents).mockImplementation(
+      () => new Promise((resolve) => { resolveWrite = resolve })
+    )
+
+    const initial = [ev('a', '09:00'), ev('b', '10:00'), ev('c', '11:00')]
+    const { result, rerender } = renderHook(
+      ({ events }) => useReorderState(events, 'd1'),
+      { initialProps: { events: initial } }
+    )
+
+    let dragEndPromise!: Promise<void>
+    act(() => {
+      dragEndPromise = result.current.handleDragEnd({
+        active: { id: 'c' }, over: { id: 'a' },
+      } as unknown as Parameters<typeof result.current.handleDragEnd>[0])
+    })
+
+    // The write's own realtime push lands before the RPC promise resolves,
+    // already carrying the new order.
+    const reordered = [ev('c', '11:00'), ev('a', '09:00'), ev('b', '10:00')]
+    rerender({ events: reordered })
+    expect(result.current.events.map((e) => e.id)).toEqual(['c', 'a', 'b'])
+
+    await act(async () => {
+      resolveWrite({ ok: true })
+      await dragEndPromise
+    })
+
+    // pendingOrder is cleared once the write settles and matches the server.
+    expect(result.current.events).toBe(reordered)
   })
 })
