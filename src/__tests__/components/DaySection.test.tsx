@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, renderHook, act } from '@testing-library/react'
+import { render, screen, renderHook, act, fireEvent, waitFor } from '@testing-library/react'
 
 vi.mock('../../lib/db', () => ({
   reorderEvents: vi.fn(async () => ({ ok: true })),
@@ -11,7 +11,8 @@ vi.mock('../../components/EventDetailSheet', () => ({ EventDetailSheet: () => nu
 vi.mock('../../hooks/useNow', () => ({ useNow: () => new Date('2026-10-12T10:00:00') }))
 
 import { DaySection, applyReorder, useReorderState } from '../../components/DaySection'
-import { reorderEvents } from '../../lib/db'
+import { reorderEvents, updateDayLabel } from '../../lib/db'
+import { toast } from '../../lib/toast'
 
 const day = { id: 'd1', date: '2026-10-12', label: '', sort_order: 0 }
 const ev = (id: string, time_start: string) => ({
@@ -42,6 +43,23 @@ describe('DaySection now line', () => {
   it('shows a visible drag handle', () => {
     render(<DaySection day={day} tripId="t1" members={[]} events={[ev('a', '09:00')]} />)
     expect(screen.getByRole('button', { name: '拖曳排序' })).toBeVisible()
+  })
+})
+
+describe('DaySection label editing', () => {
+  it('reverts the label and toasts when updateDayLabel fails', async () => {
+    vi.mocked(updateDayLabel).mockResolvedValueOnce({ ok: false })
+    render(
+      <DaySection day={{ ...day, label: '原本標籤' }} tripId="t1" members={[]} events={[]} />
+    )
+
+    fireEvent.click(screen.getByText('原本標籤'))
+    const input = screen.getByLabelText('日期標籤')
+    fireEvent.change(input, { target: { value: '新標籤' } })
+    fireEvent.blur(input)
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('標籤儲存失敗,請再試一次'))
+    expect(screen.getByText('原本標籤')).toBeInTheDocument()
   })
 })
 

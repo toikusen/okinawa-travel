@@ -32,7 +32,15 @@ export function ForkCard({ event, onClick }: Props) {
     >
       <div className="pl-8 pr-4 pt-3 pb-2">
         <p className="text-xs font-semibold text-primary tracking-wide">
-          分頭行動 · {event.time_start}–{event.time_end}
+          分頭行動
+          {(event.time_start || event.time_end) && (
+            <>
+              {' · '}
+              {event.time_start && event.time_end
+                ? `${event.time_start}–${event.time_end}`
+                : event.time_start || event.time_end}
+            </>
+          )}
         </p>
       </div>
       <div data-testid="fork-groups" className="flex flex-col gap-2 pl-8 pr-3 pb-3">

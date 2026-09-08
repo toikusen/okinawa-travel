@@ -36,6 +36,14 @@ describe('ForkCard', () => {
     expect(screen.getByText(/15:30–17:30/)).toBeInTheDocument()
   })
 
+  it('renders just the label with no separator or dash when both times are blank', () => {
+    const noTimeEvent: TripEvent = { ...forkEvent, time_start: '', time_end: '' }
+    render(<ForkCard event={noTimeEvent} onClick={() => {}} />)
+    expect(screen.getByText('分頭行動')).toBeInTheDocument()
+    expect(screen.queryByText(/–/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/·/)).not.toBeInTheDocument()
+  })
+
   it('calls onClick with the event when clicked', () => {
     const onClick = vi.fn()
     render(<ForkCard event={forkEvent} onClick={onClick} />)

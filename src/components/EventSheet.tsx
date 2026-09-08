@@ -125,7 +125,11 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
         : { ...base, title: '', location: '', notes: '', fork_items: forks, image_url: resolvedImageUrl, link_url: sanitizeLinkUrl(linkUrl) }
 
       if (isEdit) {
-        await updateEvent(event!.id, data)
+        const result = await updateEvent(event!.id, data)
+        if (!result.ok) {
+          toast('儲存失敗,請再試一次')
+          return
+        }
       } else {
         const newId = await createEvent(tripId, dayId, { ...data, ...(preGeneratedId ? { id: preGeneratedId } : {}) })
         if (timeStart) {
@@ -152,7 +156,11 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
     setConfirmDelete(false)
     setSaving(true)
     try {
-      await deleteEvent(event.id)
+      const result = await deleteEvent(event.id)
+      if (!result.ok) {
+        toast('刪除失敗,請再試一次')
+        return
+      }
       onClose()
     } catch {
       toast('刪除失敗,請再試一次')

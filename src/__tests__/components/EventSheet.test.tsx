@@ -1,19 +1,22 @@
 // @vitest-environment happy-dom
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { EventSheet } from '../../components/EventSheet'
-import { deleteEvent } from '../../lib/db'
+import { updateEvent, deleteEvent } from '../../lib/db'
+import { toast } from '../../lib/toast'
 import type { TripEvent } from '../../types'
 
 vi.mock('../../lib/db', () => ({
   createEvent: vi.fn().mockResolvedValue('new-id'),
-  updateEvent: vi.fn().mockResolvedValue(undefined),
-  deleteEvent: vi.fn().mockResolvedValue(undefined),
-  reorderEvents: vi.fn().mockResolvedValue(undefined),
+  updateEvent: vi.fn().mockResolvedValue({ ok: true }),
+  deleteEvent: vi.fn().mockResolvedValue({ ok: true }),
+  reorderEvents: vi.fn().mockResolvedValue({ ok: true }),
 }))
 
 vi.mock('../../lib/storage', () => ({
   uploadEventImage: vi.fn().mockResolvedValue('https://cdn.example.com/new.jpg'),
 }))
+
+vi.mock('../../lib/toast', () => ({ toast: vi.fn() }))
 
 const sharedEvent: TripEvent = {
   id: 'e1',
@@ -187,6 +190,32 @@ describe('EventSheet', () => {
     fireEvent.change(screen.getByLabelText('第 2 組活動'), { target: { value: '購物' } })
 
     expect(screen.getByText('儲存')).toBeEnabled()
+  })
+
+  it('keeps the sheet open and toasts when updateEvent fails', async () => {
+    vi.mocked(updateEvent).mockResolvedValueOnce({ ok: false, error: 'boom' })
+    const onClose = vi.fn()
+    render(
+      <EventSheet open={true} event={sharedEvent} dayId="d1" tripId="t1" events={[sharedEvent]} onClose={onClose} />
+    )
+    fireEvent.click(screen.getByText('儲存'))
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('儲存失敗,請再試一次'))
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('keeps the sheet open and toasts when deleteEvent fails', async () => {
+    vi.mocked(deleteEvent).mockResolvedValueOnce({ ok: false, error: 'boom' })
+    const onClose = vi.fn()
+    render(
+      <EventSheet open={true} event={sharedEvent} dayId="d1" tripId="t1" events={[sharedEvent]} onClose={onClose} />
+    )
+    fireEvent.click(screen.getByRole('button', { name: '刪除' }))
+    const confirmButtons = screen.getAllByRole('button', { name: '刪除' })
+    fireEvent.click(confirmButtons[confirmButtons.length - 1])
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('刪除失敗,請再試一次'))
+    expect(onClose).not.toHaveBeenCalled()
   })
 
   it('treats whitespace-only fields as empty', () => {

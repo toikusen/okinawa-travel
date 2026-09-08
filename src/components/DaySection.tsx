@@ -174,7 +174,12 @@ export function DaySection({ day, tripId, members, events: incomingEvents }: Pro
   const handleLabelBlur = async () => {
     setEditingLabel(false)
     if (labelDraft !== day.label) {
-      await updateDayLabel(day.id, labelDraft)
+      const previous = day.label
+      const result = await updateDayLabel(day.id, labelDraft)
+      if (!result.ok) {
+        setLabelDraft(previous)
+        toast('標籤儲存失敗,請再試一次')
+      }
     }
   }
 
