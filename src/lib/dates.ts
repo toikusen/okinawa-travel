@@ -1,3 +1,5 @@
+import type { Day, TripEvent } from '../types'
+
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
 
 function parse(dateStr: string): Date {
@@ -90,4 +92,35 @@ export function nowLineIndex(events: { time_start: string }[], now: string): num
     if (e.time_start && e.time_start <= now) index = i + 1
   })
   return index
+}
+
+const NEXT_LIMIT = 3
+
+/** What the traveller needs on screen right now: what is happening, what is next. */
+export function pickNow({ days, eventsByDay, now }: {
+  days: Day[]
+  eventsByDay: Record<string, TripEvent[]>
+  now: Date
+}): { current: TripEvent[]; next: TripEvent[]; nextLabel: '接下來' | '明天' } {
+  const time = hhmm(now)
+  const today = todayStr(now)
+  const todayDay = days.find(d => d.date === today)
+  const todayEvents = todayDay ? (eventsByDay[todayDay.id] ?? []) : []
+  const byTime = [...todayEvents].sort((a, b) => a.time_start.localeCompare(b.time_start))
+
+  const current = byTime.filter(e => e.time_start && e.time_end && e.time_start <= time && time < e.time_end)
+  const next = byTime.filter(e => e.time_start && e.time_start > time)
+
+  if (next.length) {
+    return { current, next: next.slice(0, NEXT_LIMIT), nextLabel: '接下來' }
+  }
+
+  const tomorrowIndex = days.findIndex(d => d.date === today) + 1
+  const tomorrow = todayDay && tomorrowIndex < days.length ? days[tomorrowIndex] : undefined
+  const tomorrowEvents = tomorrow ? (eventsByDay[tomorrow.id] ?? []) : []
+  const firstTomorrow = [...tomorrowEvents]
+    .sort((a, b) => a.time_start.localeCompare(b.time_start))
+    .slice(0, 1)
+
+  return { current, next: firstTomorrow, nextLabel: '明天' }
 }

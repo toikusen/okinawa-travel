@@ -68,4 +68,9 @@ describe('EventDetailSheet', () => {
     expect(screen.getByText('09:00')).toBeInTheDocument()
     expect(screen.queryByText('–', { exact: false })).not.toBeInTheDocument()
   })
+
+  it('hides the edit button when hideEdit is set', () => {
+    render(<EventDetailSheet open={true} event={event} onClose={() => {}} onEdit={() => {}} hideEdit />)
+    expect(screen.queryByText('編輯行程')).not.toBeInTheDocument()
+  })
 })

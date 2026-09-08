@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fmtMD, fmtChip, fmtRange, dayCount, daysUntil, tripStatus, todayStr, hhmm, sortTrips, mapsUrl, nowLineIndex } from '../../lib/dates'
+import { fmtMD, fmtChip, fmtRange, dayCount, daysUntil, tripStatus, todayStr, hhmm, sortTrips, mapsUrl, nowLineIndex, pickNow } from '../../lib/dates'
 
 describe('dates', () => {
   it('formats YYYY-MM-DD as M/D (weekday)', () => {
@@ -97,5 +97,62 @@ describe('nowLineIndex', () => {
 
   it('ignores events without a start time', () => {
     expect(nowLineIndex([{ time_start: '' }, { time_start: '09:00' }], '10:00')).toBe(2)
+  })
+})
+
+describe('pickNow', () => {
+  const days = [
+    { id: 'd1', date: '2026-10-12', label: '', sort_order: 0 },
+    { id: 'd2', date: '2026-10-13', label: '', sort_order: 1 },
+  ]
+  const ev = (id: string, s: string, e: string) => ({
+    id, type: 'shared' as const, title: id, time_start: s, time_end: e,
+    location: '', notes: '', sort_order: 0,
+  })
+
+  it('returns the event spanning now as current and the rest of today as next', () => {
+    const result = pickNow({
+      days,
+      eventsByDay: { d1: [ev('a', '09:00', '12:00'), ev('b', '12:30', '13:30'), ev('c', '14:00', '16:00')] },
+      now: new Date('2026-10-12T10:00:00'),
+    })
+    expect(result.current.map(e => e.id)).toEqual(['a'])
+    expect(result.next.map(e => e.id)).toEqual(['b', 'c'])
+    expect(result.nextLabel).toBe('接下來')
+  })
+
+  it('caps next at three entries', () => {
+    const result = pickNow({
+      days,
+      eventsByDay: { d1: ['b', 'c', 'd', 'e'].map((id, i) => ev(id, `1${i + 3}:00`, `1${i + 4}:00`)) },
+      now: new Date('2026-10-12T10:00:00'),
+    })
+    expect(result.next).toHaveLength(3)
+  })
+
+  it('falls back to tomorrow when today has nothing left', () => {
+    const result = pickNow({
+      days,
+      eventsByDay: { d1: [ev('a', '09:00', '10:00')], d2: [ev('t', '08:00', '09:00')] },
+      now: new Date('2026-10-12T22:00:00'),
+    })
+    expect(result.current).toEqual([])
+    expect(result.next.map(e => e.id)).toEqual(['t'])
+    expect(result.nextLabel).toBe('明天')
+  })
+
+  it('lists every overlapping event as current', () => {
+    const result = pickNow({
+      days,
+      eventsByDay: { d1: [ev('a', '09:00', '12:00'), ev('b', '09:30', '11:00')] },
+      now: new Date('2026-10-12T10:00:00'),
+    })
+    expect(result.current.map(e => e.id)).toEqual(['a', 'b'])
+  })
+
+  it('returns empty when today is not part of the trip', () => {
+    const result = pickNow({ days, eventsByDay: {}, now: new Date('2026-11-01T10:00:00') })
+    expect(result.current).toEqual([])
+    expect(result.next).toEqual([])
   })
 })

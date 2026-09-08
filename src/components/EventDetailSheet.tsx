@@ -7,9 +7,10 @@ interface Props {
   event: TripEvent | null
   onClose: () => void
   onEdit: (event: TripEvent) => void
+  hideEdit?: boolean
 }
 
-export function EventDetailSheet({ open, event, onClose, onEdit }: Props) {
+export function EventDetailSheet({ open, event, onClose, onEdit, hideEdit }: Props) {
   if (!open || !event) return null
 
   const isFork = event.type === 'fork'
@@ -94,12 +95,14 @@ export function EventDetailSheet({ open, event, onClose, onEdit }: Props) {
             </a>
           )}
 
-          <button
-            onClick={() => onEdit(event)}
-            className="w-full border border-[#e8edf2] text-[#1a2530] rounded-[10px] py-2.5 text-sm font-semibold"
-          >
-            編輯行程
-          </button>
+          {!hideEdit && (
+            <button
+              onClick={() => onEdit(event)}
+              className="w-full border border-[#e8edf2] text-[#1a2530] rounded-[10px] py-2.5 text-sm font-semibold"
+            >
+              編輯行程
+            </button>
+          )}
         </div>
     </BottomSheet>
   )
