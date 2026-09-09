@@ -7,9 +7,12 @@ import { Icon } from './Icon'
 interface Props {
   event: TripEvent
   onClick: (event: TripEvent) => void
+  /** Leave room for the timeline's drag handle. Off everywhere else, or the
+   *  card indents past its neighbours with nothing in the gap. */
+  inset?: boolean
 }
 
-export function EventCard({ event, onClick }: Props) {
+export function EventCard({ event, onClick, inset = false }: Props) {
   const [imgError, setImgError] = useState(false)
   const showThumbnail = !!event.image_url && !imgError
   const time =
@@ -28,13 +31,17 @@ export function EventCard({ event, onClick }: Props) {
           onClick(event)
         }
       }}
-      className="w-full bg-white rounded-[12px] py-3 pl-8 pr-3 shadow-card text-left active:opacity-70 transition-opacity"
+      className={`w-full bg-white rounded-[12px] py-3 pr-3 shadow-card text-left active:opacity-70 transition-opacity ${
+        inset ? 'pl-8' : 'pl-3'
+      }`}
     >
       <div className="flex items-start gap-2.5">
         {/* The row's visual anchor. Guessed from the title, so it is decorative
             only — the title right next to it always carries the real meaning. */}
-        <span className="mt-0.5 shrink-0 w-8 h-8 rounded-[9px] bg-bg-accent text-primary flex items-center justify-center">
-          <Icon name={eventCategory(event.title)} size={16} />
+        <span className="shrink-0 w-8 h-8 rounded-[9px] bg-bg-accent text-primary flex items-center justify-center">
+          {/* NowSection renders a fork event through this card too, where the
+              title is literally 分頭行動 and guessing would land on the pin. */}
+          <Icon name={event.type === 'fork' ? 'users' : eventCategory(event.title)} size={16} />
         </span>
 
         <div className="flex-1 min-w-0">
@@ -51,7 +58,7 @@ export function EventCard({ event, onClick }: Props) {
                 rel="noopener noreferrer"
                 aria-label={`導航到 ${event.location}`}
                 onClick={(e) => e.stopPropagation()}
-                className="shrink-0 -my-1.5 w-7 h-7 flex items-center justify-center text-primary"
+                className="shrink-0 -my-1.5 -ml-1 w-6 h-6 flex items-center justify-center text-primary"
               >
                 <Icon name="navigation" size={14} />
               </a>

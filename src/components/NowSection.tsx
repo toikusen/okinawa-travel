@@ -50,7 +50,7 @@ export function NowSection({ days, eventsByDay, onOpen }: Props) {
                   rel="noopener noreferrer"
                   aria-label={`導航到 ${event.location}`}
                   onClick={(e) => e.stopPropagation()}
-                  className="shrink-0 -my-1.5 w-7 h-7 flex items-center justify-center text-primary"
+                  className="shrink-0 -my-1.5 -ml-1 w-6 h-6 flex items-center justify-center text-primary"
                 >
                   <Icon name="navigation" size={14} />
                 </a>
