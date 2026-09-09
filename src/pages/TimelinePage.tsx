@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, Navigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useTrip } from '../hooks/useTrip'
@@ -14,9 +14,6 @@ import { WISHLIST } from '../lib/db'
 import { InstallPrompt } from '../components/InstallPrompt'
 import { InviteCard } from '../components/InviteCard'
 import { TripNotesCard } from '../components/TripNotesCard'
-import { NowSection } from '../components/NowSection'
-import { EventDetailSheet } from '../components/EventDetailSheet'
-import type { TripEvent } from '../types'
 
 export function TimelinePage() {
   const { user } = useAuth()
@@ -25,24 +22,29 @@ export function TimelinePage() {
   const { trip, days, eventsByDay, loading } = useTrip(tripId ?? null)
   const syncStatus = useSyncStatus()
   const [activeDay, setActiveDay] = useState<string | null>(null)
-  const [detailEvent, setDetailEvent] = useState<TripEvent | null>(null)
 
   const scrolledRef = useRef(false)
 
-  useEffect(() => {
-    if (scrolledRef.current || !days.length) return
-
+  /** Brings the first event that has not ended into view under the sticky header.
+   *  Returns false when there is nothing to scroll to, so the initial scroll can
+   *  retry on the next data update. Shared by that initial scroll and the 今天 tab. */
+  const scrollToNow = useCallback(() => {
     const targetId = scrollTargetEventId({ days, eventsByDay, now: new Date() })
-    if (!targetId) return
+    if (!targetId) return false
 
     const el = document.getElementById(`event-${targetId}`)
-    if (!el) return
+    if (!el) return false
 
-    scrolledRef.current = true
     const headerHeight = document.querySelector('header')?.getBoundingClientRect().height ?? 96
     el.style.scrollMarginTop = `${headerHeight + 8}px`
     el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    return true
   }, [days, eventsByDay])
+
+  useEffect(() => {
+    if (scrolledRef.current || !days.length) return
+    scrolledRef.current = scrollToNow()
+  }, [days.length, scrollToNow])
 
   if (loading) {
     return (
@@ -122,11 +124,6 @@ export function TimelinePage() {
         {/* 航班、訂房代號、緊急聯絡:旅途中最常翻的一塊,放在最上面 */}
         <TripNotesCard trip={trip} />
         <InviteCard trip={trip} />
-        {isOngoing && (
-          <div id="now-section">
-            <NowSection days={days} eventsByDay={eventsByDay} onOpen={setDetailEvent} />
-          </div>
-        )}
         <div className="flex flex-col gap-6">
           {days.map((day) => (
             <DaySection
@@ -151,19 +148,11 @@ export function TimelinePage() {
       <TripNav
         active={isOngoing ? 'today' : 'itinerary'}
         todayDisabled={!isOngoing}
-        onToday={() => document.getElementById('now-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+        onToday={scrollToNow}
         onTop={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
       />
 
       <InstallPrompt />
-
-      <EventDetailSheet
-        open={detailEvent !== null}
-        event={detailEvent}
-        onClose={() => setDetailEvent(null)}
-        onEdit={() => setDetailEvent(null)}
-        hideEdit
-      />
     </div>
   )
 }

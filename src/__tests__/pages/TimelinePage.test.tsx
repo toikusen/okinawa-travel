@@ -84,6 +84,33 @@ describe('TimelinePage', () => {
     }
   })
 
+  it('sends the 今天 tab to the event that has not ended, not to a summary block', async () => {
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
+    vi.setSystemTime(new Date('2026-10-12T10:00:00'))
+
+    mockUseTrip.mockReturnValue({
+      trip: { id: 't1', name: '沖繩', owner_email: 'sei@test.com', members: [], start_date: '2026-10-12', end_date: '2026-10-13' },
+      days: [{ id: 'd1', date: '2026-10-12', label: '', sort_order: 0 }],
+      eventsByDay: {
+        d1: [
+          { id: 'done', type: 'shared', title: 'x', time_start: '07:00', time_end: '08:00', location: '', notes: '', sort_order: 0 },
+          { id: 'live', type: 'shared', title: 'y', time_start: '09:00', time_end: '12:00', location: '', notes: '', sort_order: 1 },
+        ],
+      },
+      loading: false,
+    })
+
+    renderAt('/trips/t1')
+    scrollIntoView.mockClear()
+
+    await userEvent.click(screen.getByRole('button', { name: '今天' }))
+
+    expect(scrollIntoView).toHaveBeenCalledTimes(1)
+    expect(scrollIntoView.mock.instances[0]).toBe(document.getElementById('event-live'))
+    vi.useRealTimers()
+  })
+
   it('opens settings from the header gear', async () => {
     mockUseTrip.mockReturnValue({
       trip: { id: 't1', name: '沖繩', owner_email: 'sei@test.com', members: [], start_date: '2026-08-01', end_date: '2026-08-02' },
