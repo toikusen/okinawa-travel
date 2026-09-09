@@ -1,144 +1,15 @@
-import { useEffect, useRef, useState } from 'react'
-import {
-  DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors,
-  type DragEndEvent,
-} from '@dnd-kit/core'
-import {
-  SortableContext, verticalListSortingStrategy, useSortable, arrayMove,
-  sortableKeyboardCoordinates,
-} from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import { reorderEvents, updateDayLabel } from '../lib/db'
+import { useState } from 'react'
+import { useDroppable } from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { updateDayLabel } from '../lib/db'
 import { toast } from '../lib/toast'
 import { fmtMD, todayStr, hhmm, nowLineIndex, dayRouteUrl } from '../lib/dates'
 import { useNow } from '../hooks/useNow'
 import { Icon } from './Icon'
-import { EventCard } from './EventCard'
-import { ForkCard } from './ForkCard'
+import { SortableCard } from './SortableCard'
 import { EventSheet } from './EventSheet'
 import { EventDetailSheet } from './EventDetailSheet'
 import type { Day, TripEvent, TripMember } from '../types'
-
-/** Move `activeId` to `overId`'s position. Returns the input untouched when
- *  either id is not in the list. */
-export function applyReorder(events: TripEvent[], activeId: string, overId: string): TripEvent[] {
-  const from = events.findIndex((e) => e.id === activeId)
-  const to = events.findIndex((e) => e.id === overId)
-  if (from < 0 || to < 0) return events
-  return arrayMove(events, from, to)
-}
-
-/**
- * Optimistic drag-reorder state, extracted from DaySection so the
- * in-flight-write race can be exercised directly in tests (real dnd-kit
- * drags are unreliable in jsdom).
- *
- * `incomingEvents` is the server-derived list; it can get a new array
- * reference for reasons unrelated to this day's own reorder (e.g. a
- * realtime push triggered by another day's event changing — see
- * `subscribeToTripEvents` in `lib/db.ts`, which refetches the whole trip on
- * any change). `writingRef` guards against that: while this day's own
- * `reorderEvents` write is in flight, an incoming prop change must not wipe
- * out the optimistic order, or the list flickers back and then forward
- * again once the write's own realtime push lands.
- */
-export function useReorderState(incomingEvents: TripEvent[], dayId: string) {
-  const [pendingOrder, setPendingOrder] = useState<TripEvent[] | null>(null)
-  const writingRef = useRef(false)
-  const incomingRef = useRef(incomingEvents)
-  const events = pendingOrder ?? incomingEvents
-
-  useEffect(() => {
-    incomingRef.current = incomingEvents
-    // A write for this day is still in flight — its own realtime push may
-    // land before the RPC promise resolves. Keep the optimistic order until
-    // the write settles (see the success branch below).
-    if (writingRef.current) return
-    setPendingOrder(null)
-  }, [incomingEvents])
-
-  const handleDragEnd = async ({ active, over }: DragEndEvent) => {
-    if (!over || active.id === over.id) return
-    const reordered = applyReorder(events, String(active.id), String(over.id))
-    if (reordered === events) return
-
-    setPendingOrder(reordered)
-    writingRef.current = true
-    try {
-      const result = await reorderEvents(dayId, reordered.map((e) => e.id))
-      if (!result.ok) {
-        setPendingOrder(null)
-        toast('排序沒有存成功,已還原')
-        return
-      }
-      // The realtime push for this write may already have landed while we
-      // were waiting, in which case incomingEvents already matches — settle
-      // instead of leaving the optimistic copy around indefinitely.
-      const latest = incomingRef.current
-      const matches =
-        latest.length === reordered.length &&
-        latest.every((e, i) => e.id === reordered[i].id)
-      if (matches) setPendingOrder(null)
-    } finally {
-      writingRef.current = false
-    }
-  }
-
-  return { events, handleDragEnd }
-}
-
-function SortableCard({
-  event,
-  onOpen,
-}: {
-  event: TripEvent
-  onOpen: (e: TripEvent) => void
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: event.id })
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  }
-
-  return (
-    <div
-      ref={setNodeRef}
-      id={`event-${event.id}`}
-      style={style}
-      className="relative"
-    >
-      {/* 拖曳把手：立即可拖，卡片本體維持點擊 */}
-      <span
-        {...attributes}
-        {...listeners}
-        role="button"
-        aria-label="拖曳排序"
-        // ponytail: the grip is centred on the card's first icon, whose y differs
-        // per card type — event icon sits at 30px (py-3 + mt-0.5 + h-8/2),
-        // the fork header icon at ~21px (pt-3 + 17px row/2). Grip is h-7, so pt = y - 14.
-        className={`absolute left-0 top-0 bottom-0 w-8 z-10 flex items-start justify-center touch-none cursor-grab active:cursor-grabbing ${
-          event.type === 'fork' ? 'pt-[7px]' : 'pt-4'
-        }`}
-      >
-        <span className="w-5 h-7 rounded-[5px] bg-bg flex items-center justify-center text-muted">
-          <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor" aria-hidden="true">
-            <circle cx="3" cy="3" r="1.4" /><circle cx="8" cy="3" r="1.4" />
-            <circle cx="3" cy="8" r="1.4" /><circle cx="8" cy="8" r="1.4" />
-            <circle cx="3" cy="13" r="1.4" /><circle cx="8" cy="13" r="1.4" />
-          </svg>
-        </span>
-      </span>
-      {event.type === 'fork' ? (
-        <ForkCard event={event} onClick={onOpen} />
-      ) : (
-        <EventCard event={event} onClick={onOpen} />
-      )}
-    </div>
-  )
-}
 
 function NowLine({ time }: { time: string }) {
   return (
@@ -159,20 +30,16 @@ interface Props {
   days?: Day[]
 }
 
-export function DaySection({ day, tripId, members, events: incomingEvents, days = [] }: Props) {
+/** One day of the timeline. A drop target for the trip's DndContext, which
+ *  lives in TimelinePage so a card can cross between days. */
+export function DaySection({ day, tripId, members, events, days = [] }: Props) {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<TripEvent | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
   const [detailEvent, setDetailEvent] = useState<TripEvent | null>(null)
   const [editingLabel, setEditingLabel] = useState(false)
   const [labelDraft, setLabelDraft] = useState(day.label)
-  const { events, handleDragEnd } = useReorderState(incomingEvents, day.id)
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 3 } }),
-    // 鍵盤排序:focus 把手後空白鍵拿起、方向鍵移動、空白鍵放下
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  )
+  const { setNodeRef, isOver } = useDroppable({ id: day.id })
 
   const now = useNow()
   const isToday = day.date === todayStr(now)
@@ -257,20 +124,28 @@ export function DaySection({ day, tripId, members, events: incomingEvents, days 
         </button>
       </div>
 
-      {/* Sortable event list */}
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={events.map((e) => e.id)} strategy={verticalListSortingStrategy}>
-          <div className="flex flex-col gap-2">
-            {events.map((event, i) => (
-              <span key={event.id} className="contents">
-                {i === nowIndex && <NowLine time={nowTime} />}
-                <SortableCard event={event} onOpen={openDetail} />
-              </span>
-            ))}
-            {nowIndex === events.length && events.length > 0 && <NowLine time={nowTime} />}
-          </div>
-        </SortableContext>
-      </DndContext>
+      <SortableContext id={day.id} items={events.map((e) => e.id)} strategy={verticalListSortingStrategy}>
+        <div ref={setNodeRef} className="flex flex-col gap-2">
+          {events.map((event, i) => (
+            <span key={event.id} className="contents">
+              {i === nowIndex && <NowLine time={nowTime} />}
+              <SortableCard event={event} onOpen={openDetail} />
+            </span>
+          ))}
+          {nowIndex === events.length && events.length > 0 && <NowLine time={nowTime} />}
+          {/* An empty day needs a body to be a drop target at all, and the
+              hint is what tells you dragging here is a thing. */}
+          {events.length === 0 && (
+            <p
+              className={`rounded-[12px] border border-dashed py-4 text-center text-xs ${
+                isOver ? 'border-primary bg-bg-accent text-primary' : 'border-icon-muted text-text-label'
+              }`}
+            >
+              還沒安排,把卡片拖來這裡
+            </p>
+          )}
+        </div>
+      </SortableContext>
 
       <EventSheet
         open={sheetOpen}

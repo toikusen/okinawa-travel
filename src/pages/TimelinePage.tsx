@@ -1,5 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, Navigate } from 'react-router-dom'
+import {
+  DndContext, closestCenter, PointerSensor, KeyboardSensor, MeasuringStrategy,
+  useSensor, useSensors,
+} from '@dnd-kit/core'
+import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { useAuth } from '../hooks/useAuth'
 import { useTrip } from '../hooks/useTrip'
 import { useSyncStatus } from '../hooks/useSyncStatus'
@@ -11,6 +16,8 @@ import { TripNav } from '../components/TripNav'
 import { DaySection } from '../components/DaySection'
 import { WishlistSection } from '../components/WishlistSection'
 import { WISHLIST } from '../lib/db'
+import { useTripDnd } from '../hooks/useTripDnd'
+import type { EventsByDay } from '../lib/dnd'
 import { InstallPrompt } from '../components/InstallPrompt'
 import { InviteCard } from '../components/InviteCard'
 
@@ -23,6 +30,23 @@ export function TimelinePage() {
   const [activeDay, setActiveDay] = useState<string | null>(null)
 
   const scrolledRef = useRef(false)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 3 } }),
+    // 鍵盤排序:focus 把手後空白鍵拿起、方向鍵移動、空白鍵放下
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
+
+  /** Every drop target, including the days that have no events yet — a day
+   *  missing from the map could not be dragged into. */
+  const containers = useMemo<EventsByDay>(() => {
+    const map: EventsByDay = { [WISHLIST]: eventsByDay[WISHLIST] ?? [] }
+    for (const day of days) map[day.id] = eventsByDay[day.id] ?? []
+    return map
+  }, [days, eventsByDay])
+
+  const { byDay, handleDragStart, handleDragOver, handleDragEnd } =
+    useTripDnd(containers, tripId ?? '')
 
   /** Brings the first event that has not ended into view under the sticky header.
    *  Returns false when there is nothing to scroll to, so the initial scroll can
@@ -121,25 +145,37 @@ export function TimelinePage() {
 
       <main className="flex-1 overflow-y-auto px-4 py-4">
         <InviteCard trip={trip} />
-        <div className="flex flex-col gap-6">
-          {days.map((day) => (
-            <DaySection
-              key={day.id}
-              day={day}
-              tripId={trip.id}
-              members={trip.members}
-              events={eventsByDay[day.id] ?? []}
-              days={days}
-            />
-          ))}
-        </div>
+        {/* One DndContext for the whole trip: a card dragged out of one day
+            can land in another, or in the wishlist. Always-measuring keeps an
+            empty day droppable — its box only exists once the drag starts. */}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="flex flex-col gap-6">
+            {days.map((day) => (
+              <DaySection
+                key={day.id}
+                day={day}
+                tripId={trip.id}
+                members={trip.members}
+                events={byDay[day.id] ?? []}
+                days={days}
+              />
+            ))}
+          </div>
 
-        <WishlistSection
-          tripId={trip.id}
-          days={days}
-          members={trip.members}
-          events={eventsByDay[WISHLIST] ?? []}
-        />
+          <WishlistSection
+            tripId={trip.id}
+            days={days}
+            members={trip.members}
+            events={byDay[WISHLIST] ?? []}
+          />
+        </DndContext>
       </main>
 
       <TripNav
