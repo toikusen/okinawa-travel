@@ -149,3 +149,28 @@ describe('useReorderState', () => {
     expect(result.current.events).toBe(reordered)
   })
 })
+
+describe('DaySection route link', () => {
+  const at = (id: string, location: string) => ({ ...ev(id, ''), location })
+
+  it('chains the day places into one Google Maps route, in list order', () => {
+    render(
+      <DaySection
+        day={day}
+        tripId="t1"
+        members={[]}
+        events={[at('a', '那霸機場'), at('b', '美麗海水族館'), at('c', '國際通')]}
+      />
+    )
+    const link = screen.getByRole('link', { name: /當日路線/ })
+    const href = decodeURIComponent(link.getAttribute('href')!)
+    expect(href).toContain('origin=那霸機場')
+    expect(href).toContain('waypoints=美麗海水族館')
+    expect(href).toContain('destination=國際通')
+  })
+
+  it('stays out of the way when there is nothing to route', () => {
+    render(<DaySection day={day} tripId="t1" members={[]} events={[at('a', '那霸機場')]} />)
+    expect(screen.queryByRole('link', { name: /當日路線/ })).toBeNull()
+  })
+})

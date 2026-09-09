@@ -145,3 +145,25 @@ export function scrollTargetEventId({ days, eventsByDay, now }: {
   const live = byTime.find(e => (e.time_end || e.time_start) > time)
   return (live ?? byTime[0]).id
 }
+
+// Google Maps URL API caps a route at 9 intermediate waypoints.
+const MAX_WAYPOINTS = 9
+
+/** Google Maps multi-stop route through a day's places, in list order.
+ *  null when there is nothing to route (fewer than two places). */
+export function dayRouteUrl(locations: string[]): string | null {
+  const stops = locations.map(s => s.trim()).filter(Boolean)
+  if (stops.length < 2) return null
+
+  const params = new URLSearchParams({
+    api: '1',
+    origin: stops[0],
+    destination: stops[stops.length - 1],
+  })
+  // ponytail: past the cap we drop the extra middle stops Google would
+  // reject anyway — the route still starts and ends in the right place.
+  const waypoints = stops.slice(1, -1).slice(0, MAX_WAYPOINTS)
+  if (waypoints.length) params.set('waypoints', waypoints.join('|'))
+
+  return `https://www.google.com/maps/dir/?${params}`
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fmtMD, fmtChip, fmtRange, dayCount, daysUntil, tripStatus, todayStr, hhmm, sortTrips, mapsUrl, nowLineIndex, pickNow, scrollTargetEventId } from '../../lib/dates'
+import { fmtMD, fmtChip, fmtRange, dayCount, daysUntil, tripStatus, todayStr, hhmm, sortTrips, mapsUrl, dayRouteUrl, nowLineIndex, pickNow, scrollTargetEventId } from '../../lib/dates'
 
 describe('dates', () => {
   it('formats YYYY-MM-DD as M/D (weekday)', () => {
@@ -204,5 +204,35 @@ describe('scrollTargetEventId', () => {
 
   it('returns null when today is not part of the trip', () => {
     expect(scrollTargetEventId({ days, eventsByDay: {}, now: new Date('2026-11-01T10:00:00') })).toBeNull()
+  })
+})
+
+describe('dayRouteUrl', () => {
+  it('needs at least two real places', () => {
+    expect(dayRouteUrl([])).toBeNull()
+    expect(dayRouteUrl(['那霸機場'])).toBeNull()
+    expect(dayRouteUrl(['那霸機場', '  ', ''])).toBeNull()
+  })
+
+  it('routes from the first place to the last', () => {
+    const url = dayRouteUrl(['那霸機場', '國際通'])!
+    expect(decodeURIComponent(url)).toContain('origin=那霸機場')
+    expect(decodeURIComponent(url)).toContain('destination=國際通')
+    expect(url).not.toContain('waypoints')
+  })
+
+  it('puts the places in between into waypoints, in order', () => {
+    const url = decodeURIComponent(dayRouteUrl(['A', 'B', 'C', 'D'])!)
+    expect(url).toContain('origin=A')
+    expect(url).toContain('destination=D')
+    expect(url).toContain('waypoints=B|C')
+  })
+
+  it('drops middle stops past the Google waypoint cap', () => {
+    const stops = Array.from({ length: 15 }, (_, i) => `S${i}`)
+    const url = decodeURIComponent(dayRouteUrl(stops)!)
+    expect(url).toContain('origin=S0')
+    expect(url).toContain('destination=S14')
+    expect(url.split('waypoints=')[1].split('|')).toHaveLength(9)
   })
 })

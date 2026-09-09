@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
-import type { TripEvent, ForkItem, TripMember } from '../types'
-import { createEvent, updateEvent, deleteEvent, reorderEvents } from '../lib/db'
+import type { Day, TripEvent, ForkItem, TripMember } from '../types'
+import { createEvent, updateEvent, deleteEvent, moveEvent, reorderEvents } from '../lib/db'
+import { fmtMD } from '../lib/dates'
 import { uploadEventImage } from '../lib/storage'
 import { toast } from '../lib/toast'
 import { BottomSheet } from './BottomSheet'
@@ -9,10 +10,13 @@ import { ConfirmSheet } from './ConfirmSheet'
 interface Props {
   open: boolean
   event: TripEvent | null
-  dayId: string
+  /** The list this sheet was opened from; null is the wishlist. */
+  dayId: string | null
   tripId: string
   events: TripEvent[]
   members?: TripMember[]
+  /** Enables the "move to another day" picker when editing. */
+  days?: Day[]
   onClose: () => void
 }
 
@@ -31,8 +35,9 @@ function sanitizeLinkUrl(url: string): string | null {
   return /^https?:\/\//i.test(url) ? url : null
 }
 
-export function EventSheet({ open, event, dayId, tripId, events, members = [], onClose }: Props) {
+export function EventSheet({ open, event, dayId, tripId, events, members = [], days = [], onClose }: Props) {
   const isEdit = event !== null
+  const [targetDayId, setTargetDayId] = useState<string | null>(dayId)
   const [type, setType] = useState<'shared' | 'fork'>('shared')
   const [title, setTitle] = useState('')
   const [timeStart, setTimeStart] = useState('')
@@ -60,7 +65,8 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
     setImageFile(null)
     setImageUrl(event?.image_url ?? null)
     setLinkUrl(event?.link_url ?? '')
-  }, [event, open])
+    setTargetDayId(dayId)
+  }, [event, open, dayId])
 
   useEffect(() => {
     if (!imageFile) {
@@ -130,9 +136,14 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
           toast('儲存失敗,請再試一次')
           return
         }
+        if (targetDayId !== dayId) {
+          const moved = await moveEvent(tripId, event!.id, targetDayId)
+          if (!moved.ok) toast('日期沒有更新成功,請再試一次')
+        }
       } else {
         const newId = await createEvent(tripId, dayId, { ...data, ...(preGeneratedId ? { id: preGeneratedId } : {}) })
-        if (timeStart) {
+        // Wishlist items have no day to reorder within.
+        if (timeStart && dayId) {
           const allEvents: TripEvent[] = [...events, { ...data, id: newId }]
           const sorted = [...allEvents].sort((a, b) => {
             const ta = a.time_start || '\xff'
@@ -266,6 +277,26 @@ export function EventSheet({ open, event, dayId, tripId, events, members = [], o
             ? '大家一起去的行程。'
             : '同一時段大家分開行動時使用,各組的安排分開記錄。'}
         </p>
+
+        {/* 換日期／收進想去清單:編輯既有行程時才有意義 */}
+        {isEdit && days.length > 0 && (
+          <div className="mb-4">
+            <label htmlFor="ev-day" className={labelCls}>日期</label>
+            <select
+              id="ev-day"
+              className={inputCls}
+              value={targetDayId ?? ''}
+              onChange={(e) => setTargetDayId(e.target.value || null)}
+            >
+              <option value="">想去清單(未排入日期)</option>
+              {days.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {fmtMD(d.date)}{d.label ? ` ${d.label}` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {type === 'shared' ? (
           <>

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { EventSheet } from '../../components/EventSheet'
-import { updateEvent, deleteEvent } from '../../lib/db'
+import { createEvent, updateEvent, deleteEvent, moveEvent } from '../../lib/db'
 import { toast } from '../../lib/toast'
 import type { TripEvent } from '../../types'
 
@@ -9,6 +9,7 @@ vi.mock('../../lib/db', () => ({
   createEvent: vi.fn().mockResolvedValue('new-id'),
   updateEvent: vi.fn().mockResolvedValue({ ok: true }),
   deleteEvent: vi.fn().mockResolvedValue({ ok: true }),
+  moveEvent: vi.fn().mockResolvedValue({ ok: true }),
   reorderEvents: vi.fn().mockResolvedValue({ ok: true }),
 }))
 
@@ -232,5 +233,61 @@ describe('EventSheet', () => {
 
     expect(screen.getByText('儲存')).toBeDisabled()
     expect(screen.getByText('每一組都要填人名和活動')).toBeInTheDocument()
+  })
+})
+
+describe('EventSheet day picker', () => {
+  const days = [
+    { id: 'd1', date: '2026-10-12', label: '抵達', sort_order: 0 },
+    { id: 'd2', date: '2026-10-13', label: '', sort_order: 1 },
+  ]
+
+  it('is offered only when editing an existing event', () => {
+    const { rerender } = render(
+      <EventSheet open={true} event={null} dayId="d1" tripId="t1" events={[]} days={days} onClose={() => {}} />
+    )
+    expect(screen.queryByLabelText('日期')).toBeNull()
+
+    rerender(
+      <EventSheet open={true} event={sharedEvent} dayId="d1" tripId="t1" events={[]} days={days} onClose={() => {}} />
+    )
+    expect(screen.getByLabelText('日期')).toHaveValue('d1')
+  })
+
+  it('moves the event when the day changes, and leaves it alone when it does not', async () => {
+    const { unmount } = render(
+      <EventSheet open={true} event={sharedEvent} dayId="d1" tripId="t1" events={[]} days={days} onClose={() => {}} />
+    )
+    fireEvent.click(screen.getByText('儲存'))
+    await waitFor(() => expect(updateEvent).toHaveBeenCalled())
+    expect(moveEvent).not.toHaveBeenCalled()
+    unmount()
+
+    render(
+      <EventSheet open={true} event={sharedEvent} dayId="d1" tripId="t1" events={[]} days={days} onClose={() => {}} />
+    )
+    fireEvent.change(screen.getByLabelText('日期'), { target: { value: 'd2' } })
+    fireEvent.click(screen.getByText('儲存'))
+    await waitFor(() => expect(moveEvent).toHaveBeenCalledWith('t1', 'e1', 'd2'))
+  })
+
+  it('sends the event back to the wishlist when no day is picked', async () => {
+    render(
+      <EventSheet open={true} event={sharedEvent} dayId="d1" tripId="t1" events={[]} days={days} onClose={() => {}} />
+    )
+    fireEvent.change(screen.getByLabelText('日期'), { target: { value: '' } })
+    fireEvent.click(screen.getByText('儲存'))
+    await waitFor(() => expect(moveEvent).toHaveBeenCalledWith('t1', 'e1', null))
+  })
+
+  it('creates straight into the wishlist when opened with no day', async () => {
+    render(
+      <EventSheet open={true} event={null} dayId={null} tripId="t1" events={[]} days={days} onClose={() => {}} />
+    )
+    fireEvent.change(screen.getByPlaceholderText('行程名稱'), { target: { value: '古宇利島' } })
+    fireEvent.click(screen.getByText('儲存'))
+    await waitFor(() =>
+      expect(createEvent).toHaveBeenCalledWith('t1', null, expect.objectContaining({ title: '古宇利島' }))
+    )
   })
 })

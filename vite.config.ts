@@ -9,6 +9,23 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      workbox: {
+        // Event photos live in Supabase Storage, so the precache never sees
+        // them and an offline timeline showed broken thumbnails. Cache-first:
+        // an uploaded image is immutable at its URL (upsert rewrites the same
+        // path only when the user replaces it).
+        runtimeCaching: [
+          {
+            urlPattern: /\/storage\/v1\/object\/public\/event-images\//,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'event-images',
+              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 60 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
+      },
       manifest: {
         name: 'Tabi',
         short_name: 'Tabi',

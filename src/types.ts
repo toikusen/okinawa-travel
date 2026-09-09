@@ -39,4 +39,6 @@ export interface Trip {
   members: TripMember[]
   start_date: string
   end_date: string
+  /** Trip-level memo: flights, hotels, booking codes (migration 012) */
+  notes: string
 }

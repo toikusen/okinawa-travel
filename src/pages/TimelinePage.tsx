@@ -8,6 +8,8 @@ import { SyncIndicator } from '../components/SyncIndicator'
 import { AvatarStack } from '../components/AvatarStack'
 import { TripNav } from '../components/TripNav'
 import { DaySection } from '../components/DaySection'
+import { WishlistSection } from '../components/WishlistSection'
+import { WISHLIST } from '../lib/db'
 import { InstallPrompt } from '../components/InstallPrompt'
 import { InviteCard } from '../components/InviteCard'
 import { NowSection } from '../components/NowSection'
@@ -120,6 +122,18 @@ export function TimelinePage() {
       </header>
 
       <main className="flex-1 overflow-y-auto px-4 py-4">
+        {/* 航班、訂房代號、緊急聯絡:旅途中最常翻的一塊,放在最上面 */}
+        {/* ?. — a trip cached in localStorage before 012 has no notes field */}
+        {trip.notes?.trim() && (
+          <details className="mb-4 bg-white border border-border rounded-[12px] px-4 py-3">
+            <summary className="text-[13px] font-extrabold text-text-strong cursor-pointer marker:text-text-label">
+              重要資訊
+            </summary>
+            <p className="text-xs text-text-secondary whitespace-pre-line leading-relaxed mt-2">
+              {trip.notes}
+            </p>
+          </details>
+        )}
         <InviteCard trip={trip} />
         {isOngoing && (
           <div id="now-section">
@@ -134,9 +148,17 @@ export function TimelinePage() {
               tripId={trip.id}
               members={trip.members}
               events={eventsByDay[day.id] ?? []}
+              days={days}
             />
           ))}
         </div>
+
+        <WishlistSection
+          tripId={trip.id}
+          days={days}
+          members={trip.members}
+          events={eventsByDay[WISHLIST] ?? []}
+        />
       </main>
 
       <TripNav

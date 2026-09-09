@@ -10,7 +10,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { reorderEvents, updateDayLabel } from '../lib/db'
 import { toast } from '../lib/toast'
-import { fmtMD, todayStr, hhmm, nowLineIndex } from '../lib/dates'
+import { fmtMD, todayStr, hhmm, nowLineIndex, dayRouteUrl } from '../lib/dates'
 import { useNow } from '../hooks/useNow'
 import { EventCard } from './EventCard'
 import { ForkCard } from './ForkCard'
@@ -149,9 +149,11 @@ interface Props {
   tripId: string
   members: TripMember[]
   events: TripEvent[]
+  /** All days of the trip — lets the edit sheet move an event elsewhere. */
+  days?: Day[]
 }
 
-export function DaySection({ day, tripId, members, events: incomingEvents }: Props) {
+export function DaySection({ day, tripId, members, events: incomingEvents, days = [] }: Props) {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<TripEvent | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
@@ -170,6 +172,7 @@ export function DaySection({ day, tripId, members, events: incomingEvents }: Pro
   const isToday = day.date === todayStr(now)
   const nowTime = hhmm(now)
   const nowIndex = isToday ? nowLineIndex(events, nowTime) : -1
+  const routeUrl = dayRouteUrl(events.map((e) => e.location))
 
   const handleLabelBlur = async () => {
     setEditingLabel(false)
@@ -224,6 +227,21 @@ export function DaySection({ day, tripId, members, events: incomingEvents }: Pro
           </button>
         )}
         <div className="h-px flex-1 bg-border shrink-0" />
+        {/* 一天的地點串成一條 Google Maps 路線,省下逐點導航 */}
+        {routeUrl && (
+          <a
+            href={routeUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`${fmtMD(day.date)} 當日路線`}
+            className="shrink-0 flex items-center gap-1 text-[11px] font-semibold text-primary bg-bg-accent rounded-full px-2.5 py-2 -my-1"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M3 11l19-9-9 19-2-8-8-2z" />
+            </svg>
+            路線
+          </a>
+        )}
         <button
           onClick={openCreate}
           aria-label="新增行程"
@@ -259,6 +277,7 @@ export function DaySection({ day, tripId, members, events: incomingEvents }: Pro
         tripId={tripId}
         events={events}
         members={members}
+        days={days}
         onClose={() => setSheetOpen(false)}
       />
 

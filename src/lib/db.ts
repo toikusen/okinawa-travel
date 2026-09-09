@@ -39,6 +39,7 @@ export function subscribeToTrip(
       owner_email: data.owner_email ?? '',
       start_date: data.start_date,
       end_date: data.end_date,
+      notes: data.notes ?? '',
       members: (data.trip_members as { user_email: string; display_name: string; avatar_url: string }[]).map(m => ({
         email: m.user_email,
         display_name: m.display_name,
@@ -154,7 +155,7 @@ export type WriteResult = { ok: boolean; error?: string }
 
 export async function updateTrip(
   tripId: string,
-  data: Partial<Pick<Trip, 'name' | 'start_date' | 'end_date'>>
+  data: Partial<Pick<Trip, 'name' | 'start_date' | 'end_date' | 'notes'>>
 ): Promise<WriteResult> {
   const { error } = await supabase.from('trips').update(data).eq('id', tripId)
   return error ? { ok: false, error: error.message } : { ok: true }
@@ -260,6 +261,10 @@ export async function updateDayLabel(dayId: string, label: string): Promise<Writ
 
 // --- Events ---
 
+/** Bucket key for events not yet scheduled into a day (migration 013).
+ *  Not a uuid, so it can never collide with a real day id. */
+export const WISHLIST = 'wishlist'
+
 export function subscribeToTripEvents(
   tripId: string,
   onEvents: (byDay: Record<string, TripEvent[]>) => void
@@ -272,8 +277,8 @@ export function subscribeToTripEvents(
       .order('sort_order')
 
     const byDay: Record<string, TripEvent[]> = {}
-    for (const row of (data ?? []) as (TripEvent & { day_id: string })[]) {
-      (byDay[row.day_id] ??= []).push(row)
+    for (const row of (data ?? []) as (TripEvent & { day_id: string | null })[]) {
+      (byDay[row.day_id ?? WISHLIST] ??= []).push(row)
     }
     onEvents(byDay)
   }
@@ -287,9 +292,10 @@ export function subscribeToTripEvents(
   return () => { supabase.removeChannel(channel) }
 }
 
+/** `dayId` null puts the event in the trip's wishlist (migration 013). */
 export async function createEvent(
   tripId: string,
-  dayId: string,
+  dayId: string | null,
   event: Omit<TripEvent, 'id'> & { id?: string }
 ): Promise<string> {
   const { data, error } = await supabase
@@ -311,6 +317,30 @@ export async function updateEvent(
 
 export async function deleteEvent(eventId: string): Promise<WriteResult> {
   const { error } = await supabase.from('events').delete().eq('id', eventId)
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
+/** Move an event to another day, or to the wishlist (`dayId` null), appended
+ *  at the end of the target list. The count query keeps sort_order unique
+ *  without the caller having to know the target day's contents. */
+export async function moveEvent(
+  tripId: string,
+  eventId: string,
+  dayId: string | null
+): Promise<WriteResult> {
+  const query = supabase
+    .from('events')
+    .select('id', { count: 'exact', head: true })
+    .eq('trip_id', tripId)
+  const { count, error: countError } = await (dayId
+    ? query.eq('day_id', dayId)
+    : query.is('day_id', null))
+  if (countError) return { ok: false, error: countError.message }
+
+  const { error } = await supabase
+    .from('events')
+    .update({ day_id: dayId, sort_order: count ?? 0 })
+    .eq('id', eventId)
   return error ? { ok: false, error: error.message } : { ok: true }
 }
 
