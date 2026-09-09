@@ -1,5 +1,6 @@
 import { useNow } from '../hooks/useNow'
 import { pickNow, mapsUrl } from '../lib/dates'
+import { Icon } from './Icon'
 import { EventCard } from './EventCard'
 import type { Day, TripEvent } from '../types'
 
@@ -38,9 +39,9 @@ export function NowSection({ days, eventsByDay, onOpen }: Props) {
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(event) }
               }}
-              className="bg-white rounded-[10px] border border-border px-3 py-2 flex items-center gap-2 text-left active:opacity-70"
+              className="bg-white rounded-[10px] shadow-card px-3 py-2 flex items-center gap-2 text-left active:opacity-70"
             >
-              <span className="text-xs font-semibold text-text-label shrink-0 w-11">{event.time_start}</span>
+              <span className="text-xs font-mono tabular-nums text-text-label shrink-0 w-11">{event.time_start}</span>
               <span className="text-sm text-text-strong truncate flex-1">{event.title}</span>
               {event.location && (
                 <a
@@ -49,9 +50,9 @@ export function NowSection({ days, eventsByDay, onOpen }: Props) {
                   rel="noopener noreferrer"
                   aria-label={`導航到 ${event.location}`}
                   onClick={(e) => e.stopPropagation()}
-                  className="text-xs font-semibold text-primary shrink-0"
+                  className="shrink-0 -my-1.5 w-7 h-7 flex items-center justify-center text-primary"
                 >
-                  導航
+                  <Icon name="navigation" size={14} />
                 </a>
               )}
             </div>

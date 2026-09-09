@@ -2,6 +2,8 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { EventSheet } from '../../components/EventSheet'
 import { createEvent, updateEvent, deleteEvent, moveEvent } from '../../lib/db'
+import { uploadEventImage } from '../../lib/storage'
+import { compressImage } from '../../lib/image'
 import { toast } from '../../lib/toast'
 import type { TripEvent } from '../../types'
 
@@ -16,6 +18,8 @@ vi.mock('../../lib/db', () => ({
 vi.mock('../../lib/storage', () => ({
   uploadEventImage: vi.fn().mockResolvedValue('https://cdn.example.com/new.jpg'),
 }))
+
+vi.mock('../../lib/image', () => ({ compressImage: vi.fn() }))
 
 vi.mock('../../lib/toast', () => ({ toast: vi.fn() }))
 
@@ -289,5 +293,47 @@ describe('EventSheet day picker', () => {
     await waitFor(() =>
       expect(createEvent).toHaveBeenCalledWith('t1', null, expect.objectContaining({ title: '古宇利島' }))
     )
+  })
+})
+
+describe('EventSheet image picking', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  const pick = (container: HTMLElement, file: File) => {
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement
+    fireEvent.change(input, { target: { files: [file] } })
+  }
+
+  const original = () =>
+    new File([new Uint8Array(4 * 1024 * 1024)], 'IMG_0001.jpeg', { type: 'image/jpeg' })
+
+  it('uploads the shrunk photo rather than the original the user picked', async () => {
+    const shrunk = new File([new Uint8Array(200 * 1024)], 'IMG_0001.jpg', { type: 'image/jpeg' })
+    vi.mocked(compressImage).mockResolvedValue(shrunk)
+    const picked = original()
+
+    const { container } = render(
+      <EventSheet open={true} event={sharedEvent} dayId="d1" tripId="t1" events={[sharedEvent]} onClose={() => {}} />
+    )
+    pick(container, picked)
+
+    await waitFor(() => expect(compressImage).toHaveBeenCalledWith(picked))
+    fireEvent.click(screen.getByText('儲存'))
+    await waitFor(() => expect(uploadEventImage).toHaveBeenCalledWith('t1', 'e1', shrunk))
+  })
+
+  it('rejects a photo that is still over 5MB after shrinking', async () => {
+    const stillHuge = new File([new Uint8Array(6 * 1024 * 1024)], 'IMG_0001.jpg', { type: 'image/jpeg' })
+    vi.mocked(compressImage).mockResolvedValue(stillHuge)
+
+    const { container } = render(
+      <EventSheet open={true} event={sharedEvent} dayId="d1" tripId="t1" events={[sharedEvent]} onClose={() => {}} />
+    )
+    pick(container, original())
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('圖片不能超過 5MB'))
+    fireEvent.click(screen.getByText('儲存'))
+    await waitFor(() => expect(updateEvent).toHaveBeenCalled())
+    expect(uploadEventImage).not.toHaveBeenCalled()
   })
 })

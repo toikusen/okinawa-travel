@@ -74,3 +74,35 @@ describe('EventDetailSheet', () => {
     expect(screen.queryByText('編輯行程')).not.toBeInTheDocument()
   })
 })
+
+describe('EventDetailSheet image', () => {
+  it('opens an uncropped full-screen view when the photo is tapped', () => {
+    const onClose = vi.fn()
+    render(<EventDetailSheet open={true} event={event} onClose={onClose} onEdit={() => {}} />)
+
+    fireEvent.click(screen.getByRole('button', { name: '放大檢視 首里城' }))
+
+    const zoomed = screen.getAllByRole('img').find(i => i.className.includes('object-contain'))
+    expect(zoomed).toHaveAttribute('src', 'https://cdn.example.com/shurijo.jpg')
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('closes the full-screen view without closing the sheet', () => {
+    const onClose = vi.fn()
+    render(<EventDetailSheet open={true} event={event} onClose={onClose} onEdit={() => {}} />)
+
+    fireEvent.click(screen.getByRole('button', { name: '放大檢視 首里城' }))
+    fireEvent.click(screen.getByRole('button', { name: '關閉大圖' }))
+
+    expect(screen.queryByRole('button', { name: '關閉大圖' })).not.toBeInTheDocument()
+    expect(screen.getByText('編輯行程')).toBeInTheDocument()
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('drops the photo area when the image fails to load', () => {
+    render(<EventDetailSheet open={true} event={event} onClose={() => {}} onEdit={() => {}} />)
+    fireEvent.error(screen.getByRole('img'))
+    expect(screen.queryByRole('img')).toBeNull()
+    expect(screen.queryByRole('button', { name: '放大檢視 首里城' })).not.toBeInTheDocument()
+  })
+})

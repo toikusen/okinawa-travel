@@ -47,6 +47,11 @@ describe('EventCard with image', () => {
     expect(img).toHaveAttribute('src', 'https://cdn.example.com/img.jpg')
   })
 
+  it('defers thumbnail loading so a long timeline does not fetch every photo at once', () => {
+    render(<EventCard event={eventWithImage} onClick={() => {}} />)
+    expect(screen.getByRole('img')).toHaveAttribute('loading', 'lazy')
+  })
+
   it('whole card triggers onClick regardless of image', () => {
     const onClick = vi.fn()
     render(<EventCard event={eventWithImage} onClick={onClick} />)

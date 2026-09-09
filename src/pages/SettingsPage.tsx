@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { Icon } from '../components/Icon'
 import { useAuth } from '../hooks/useAuth'
 import { useTrip } from '../hooks/useTrip'
 import { updateTrip, updateTripDates, deleteTrip, removeMember } from '../lib/db'
@@ -15,10 +16,9 @@ export function SettingsPage() {
   const { tripId } = useParams<{ tripId: string }>()
   const { trip, days, eventsByDay } = useTrip(tripId ?? null)
   const [nameInput, setNameInput] = useState('')
-  const [notesInput, setNotesInput] = useState('')
   const [dates, setDates] = useState({ start: '', end: '' })
   const [dateError, setDateError] = useState<string | null>(null)
-  const [saved, setSaved] = useState<'name' | 'notes' | 'dates' | null>(null)
+  const [saved, setSaved] = useState<'name' | 'dates' | null>(null)
   const [busy, setBusy] = useState(false)
   const [confirm, setConfirm] = useState<'leave' | 'delete' | null>(null)
   const savedTimer = useRef<ReturnType<typeof setTimeout>>()
@@ -28,11 +28,6 @@ export function SettingsPage() {
   }, [trip?.name])
 
   useEffect(() => {
-    // ?? '' — a trip cached in localStorage before 012 has no notes field
-    if (trip) setNotesInput(trip.notes ?? '')
-  }, [trip?.notes])
-
-  useEffect(() => {
     if (trip) setDates({ start: trip.start_date, end: trip.end_date })
   }, [trip?.start_date, trip?.end_date])
 
@@ -40,7 +35,7 @@ export function SettingsPage() {
 
   const isOwner = trip?.owner_email === user?.email
 
-  const flashSaved = (what: 'name' | 'notes' | 'dates') => {
+  const flashSaved = (what: 'name' | 'dates') => {
     setSaved(what)
     clearTimeout(savedTimer.current)
     savedTimer.current = setTimeout(() => setSaved(null), 2000)
@@ -51,13 +46,6 @@ export function SettingsPage() {
     const result = await updateTrip(tripId, { name: nameInput.trim() })
     if (result.ok) flashSaved('name')
     else toast('名稱儲存失敗,請再試一次')
-  }
-
-  const handleSaveNotes = async () => {
-    if (!tripId || notesInput === (trip?.notes ?? '')) return
-    const result = await updateTrip(tripId, { notes: notesInput })
-    if (result.ok) flashSaved('notes')
-    else toast('重要資訊儲存失敗,請再試一次')
   }
 
   const handleShare = async () => {
@@ -115,9 +103,7 @@ export function SettingsPage() {
     <div className="min-h-screen bg-bg flex flex-col max-w-lg mx-auto">
       <header className="bg-white border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0 z-10">
         <button onClick={() => navigate(-1)} className="text-primary -ml-2 w-11 h-11 -my-1.5 flex items-center justify-center" aria-label="返回">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
+          <Icon name="chevronLeft" />
         </button>
         <h1 className="text-base font-bold text-text-strong">設定</h1>
       </header>
@@ -160,22 +146,6 @@ export function SettingsPage() {
             />
           </div>
           {dateError && <p className="text-xs text-danger mt-2">{dateError}</p>}
-        </section>
-
-        <section className="bg-white rounded-[12px] p-4 border border-border">
-          <div className="flex items-center justify-between mb-2">
-            <label htmlFor="trip-notes" className="text-xs font-semibold text-text-label">重要資訊</label>
-            {saved === 'notes' && <SavedBadge />}
-          </div>
-          <textarea
-            id="trip-notes"
-            className="w-full border border-border rounded-[8px] px-3 py-2 text-sm text-text-strong h-28 resize-none"
-            placeholder="航班編號、訂房代號、房號、保險與緊急聯絡電話…"
-            value={notesInput}
-            onChange={(e) => setNotesInput(e.target.value)}
-            onBlur={handleSaveNotes}
-          />
-          <p className="text-[11px] text-text-label mt-2">會顯示在行程最上方,所有旅伴都看得到。</p>
         </section>
 
         <section className="bg-white rounded-[12px] p-4 border border-border">
