@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useTrip } from '../hooks/useTrip'
 import { useSyncStatus } from '../hooks/useSyncStatus'
 import { fmtChip, scrollTargetEventId, todayStr, tripStatus } from '../lib/dates'
+import { Icon } from '../components/Icon'
 import { SyncIndicator } from '../components/SyncIndicator'
 import { AvatarStack } from '../components/AvatarStack'
 import { TripNav } from '../components/TripNav'
@@ -12,6 +13,7 @@ import { WishlistSection } from '../components/WishlistSection'
 import { WISHLIST } from '../lib/db'
 import { InstallPrompt } from '../components/InstallPrompt'
 import { InviteCard } from '../components/InviteCard'
+import { TripNotesCard } from '../components/TripNotesCard'
 import { NowSection } from '../components/NowSection'
 import { EventDetailSheet } from '../components/EventDetailSheet'
 import type { TripEvent } from '../types'
@@ -69,9 +71,7 @@ export function TimelinePage() {
         <div className="px-4 pt-3 pb-2 flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
             <button onClick={() => navigate('/')} className="text-primary shrink-0 -ml-2 w-11 h-11 -my-1.5 flex items-center justify-center" aria-label="回旅程列表">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M15 18l-6-6 6-6" />
-              </svg>
+              <Icon name="chevronLeft" />
             </button>
             <h1 className="text-base font-bold text-text-strong truncate">{trip.name}</h1>
           </div>
@@ -91,10 +91,7 @@ export function TimelinePage() {
               aria-label="旅程設定"
               className="text-text-label w-8 h-8 flex items-center justify-center"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-              </svg>
+              <Icon name="settings" />
             </button>
           </div>
         </div>
@@ -123,17 +120,7 @@ export function TimelinePage() {
 
       <main className="flex-1 overflow-y-auto px-4 py-4">
         {/* 航班、訂房代號、緊急聯絡:旅途中最常翻的一塊,放在最上面 */}
-        {/* ?. — a trip cached in localStorage before 012 has no notes field */}
-        {trip.notes?.trim() && (
-          <details className="mb-4 bg-white border border-border rounded-[12px] px-4 py-3">
-            <summary className="text-[13px] font-extrabold text-text-strong cursor-pointer marker:text-text-label">
-              重要資訊
-            </summary>
-            <p className="text-xs text-text-secondary whitespace-pre-line leading-relaxed mt-2">
-              {trip.notes}
-            </p>
-          </details>
-        )}
+        <TripNotesCard trip={trip} />
         <InviteCard trip={trip} />
         {isOngoing && (
           <div id="now-section">

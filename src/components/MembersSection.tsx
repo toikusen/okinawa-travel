@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { removeMember } from '../lib/db'
 import { toast } from '../lib/toast'
+import { Icon } from './Icon'
 import { useInviteLink } from '../hooks/useInviteLink'
 import type { Trip } from '../types'
 
@@ -83,14 +84,9 @@ export function MembersSection({ trip, currentEmail }: Props) {
           className="w-11 bg-bg text-primary rounded-[8px] flex items-center justify-center active:opacity-70"
         >
           {copied ? (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-ok)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M20 6L9 17l-5-5" />
-            </svg>
+            <Icon name="check" className="text-ok" />
           ) : (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <rect x="9" y="9" width="13" height="13" rx="2" />
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-            </svg>
+            <Icon name="copy" />
           )}
         </button>
       </div>

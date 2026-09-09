@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import type { TripEvent } from '../types'
 import { BottomSheet } from './BottomSheet'
 import { mapsUrl } from '../lib/dates'
@@ -11,11 +12,23 @@ interface Props {
 }
 
 export function EventDetailSheet({ open, event, onClose, onEdit, hideEdit }: Props) {
+  const [zoom, setZoom] = useState(false)
+  const [imgError, setImgError] = useState(false)
+  // The sheet stays mounted between openings, so reset per subject.
+  useEffect(() => {
+    setZoom(false)
+    setImgError(false)
+  }, [event?.id, open])
+
   if (!open || !event) return null
 
   const isFork = event.type === 'fork'
+  // A fork event carries no title of its own, so labels fall back to its name.
+  const displayTitle = isFork ? '分頭行動' : event.title
+  const showImage = !!event.image_url && !imgError
 
   return (
+    <>
     <BottomSheet
       label="行程詳情"
       onClose={onClose}
@@ -24,13 +37,23 @@ export function EventDetailSheet({ open, event, onClose, onEdit, hideEdit }: Pro
     >
         <div className="w-9 h-1 bg-border rounded-full mx-auto mt-3 mb-0 shrink-0" />
 
-        {event.image_url && (
-          <img
-            src={event.image_url}
-            alt={event.title}
-            className="w-full object-cover"
-            style={{ maxHeight: '220px' }}
-          />
+        {showImage && (
+          // Fixed ratio reserves the space before the image lands, so the sheet
+          // no longer jumps; tap opens the uncropped view.
+          <button
+            type="button"
+            onClick={() => setZoom(true)}
+            aria-label={`放大檢視 ${displayTitle}`}
+            className="w-full shrink-0 aspect-[4/3] max-h-[38vh] bg-surface-subtle"
+          >
+            <img
+              src={event.image_url!}
+              alt={displayTitle}
+              decoding="async"
+              className="w-full h-full object-cover"
+              onError={() => setImgError(true)}
+            />
+          </button>
         )}
 
         <div className="px-4 pt-3 pb-6 flex flex-col gap-3 overflow-y-auto">
@@ -43,7 +66,7 @@ export function EventDetailSheet({ open, event, onClose, onEdit, hideEdit }: Pro
               </p>
             )}
             <p className="text-[15px] font-bold text-text-strong">
-              {isFork ? '分頭行動' : event.title}
+              {displayTitle}
             </p>
             {event.location && (
               <p className="text-xs text-text-secondary mt-0.5 flex items-center gap-1.5 flex-wrap">
@@ -105,5 +128,28 @@ export function EventDetailSheet({ open, event, onClose, onEdit, hideEdit }: Pro
           )}
         </div>
     </BottomSheet>
+
+    {zoom && (
+      <div
+        className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center"
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') setZoom(false)
+        }}
+      >
+        <button
+          type="button"
+          autoFocus
+          aria-label="關閉大圖"
+          className="absolute inset-0 w-full h-full cursor-default"
+          onClick={() => setZoom(false)}
+        />
+        <img
+          src={event.image_url!}
+          alt={displayTitle}
+          className="max-w-full max-h-full object-contain pointer-events-none"
+        />
+      </div>
+    )}
+    </>
   )
 }

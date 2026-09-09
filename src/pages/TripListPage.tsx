@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { listMyTrips, type TripSummary } from '../lib/db'
 import { fmtRange, dayCount, tripStatus, daysUntil, sortTrips } from '../lib/dates'
+import { Icon } from '../components/Icon'
 import { AvatarStack } from '../components/AvatarStack'
 import { AccountSheet } from '../components/AccountSheet'
 import { InstallPrompt } from '../components/InstallPrompt'
@@ -29,7 +30,7 @@ function TripCard({ trip, onClick }: { trip: TripSummary; onClick: () => void })
   return (
     <button
       onClick={onClick}
-      className={`bg-white rounded-[12px] p-4 border border-border text-left active:opacity-70 flex items-center gap-3 ${ended ? 'opacity-60' : ''}`}
+      className={`bg-white rounded-[12px] p-4 shadow-card text-left active:opacity-70 flex items-center gap-3 ${ended ? 'opacity-60' : ''}`}
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
@@ -55,9 +56,7 @@ function TripCard({ trip, onClick }: { trip: TripSummary; onClick: () => void })
           </div>
         )}
       </div>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-icon-muted)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden="true">
-        <path d="M9 18l6-6-6-6" />
-      </svg>
+      <Icon name="chevronRight" size={16} className="shrink-0 text-icon-muted" />
     </button>
   )
 }
@@ -141,9 +140,7 @@ export function TripListPage() {
           aria-label="新增旅程"
           className="fixed bottom-[calc(1.25rem+env(safe-area-inset-bottom))] right-[max(1.25rem,calc(50vw-16rem+1.25rem))] w-[52px] h-[52px] rounded-full bg-primary text-white flex items-center justify-center shadow-[0_4px_14px_rgba(0,119,182,0.4)] active:opacity-80 z-20"
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
+          <Icon name="plus" size={22} />
         </button>
       )}
 

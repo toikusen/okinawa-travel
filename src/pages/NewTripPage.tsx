@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Icon } from '../components/Icon'
 import { useAuth } from '../hooks/useAuth'
 import { createTrip } from '../lib/db'
 import { todayStr } from '../lib/dates'
@@ -48,9 +49,7 @@ export function NewTripPage() {
     <div className="min-h-screen bg-bg flex flex-col max-w-lg mx-auto">
       <header className="bg-white border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0">
         <button onClick={() => navigate('/')} className="text-primary text-sm flex items-center gap-0.5">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-            <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <Icon name="chevronLeft" size={16} />
           返回
         </button>
         <h1 className="text-base font-bold text-text-strong">新增旅程</h1>

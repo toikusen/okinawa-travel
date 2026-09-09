@@ -12,6 +12,7 @@ import { reorderEvents, updateDayLabel } from '../lib/db'
 import { toast } from '../lib/toast'
 import { fmtMD, todayStr, hhmm, nowLineIndex, dayRouteUrl } from '../lib/dates'
 import { useNow } from '../hooks/useNow'
+import { Icon } from './Icon'
 import { EventCard } from './EventCard'
 import { ForkCard } from './ForkCard'
 import { EventSheet } from './EventSheet'
@@ -236,9 +237,7 @@ export function DaySection({ day, tripId, members, events: incomingEvents, days 
             aria-label={`${fmtMD(day.date)} 當日路線`}
             className="shrink-0 flex items-center gap-1 text-[11px] font-semibold text-primary bg-bg-accent rounded-full px-2.5 py-2 -my-1"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M3 11l19-9-9 19-2-8-8-2z" />
-            </svg>
+            <Icon name="navigation" size={12} />
             路線
           </a>
         )}
@@ -248,9 +247,7 @@ export function DaySection({ day, tripId, members, events: incomingEvents, days 
           className="w-11 h-11 -my-2 -mr-1.5 flex items-center justify-center shrink-0"
         >
           <span className="w-8 h-8 rounded-[10px] bg-bg-accent text-primary flex items-center justify-center">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
+            <Icon name="plus" size={16} />
           </span>
         </button>
       </div>
