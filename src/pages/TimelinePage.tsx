@@ -61,7 +61,9 @@ export function TimelinePage() {
 
   return (
     <div className="min-h-screen bg-bg flex flex-col max-w-lg mx-auto">
-      <header className="bg-white border-b border-border sticky top-0 z-10">
+      {/* z-20 keeps the chrome above the cards' drag handles (z-10); at an
+          equal z-index the later-in-DOM handle would paint over the chips. */}
+      <header className="bg-white border-b border-border sticky top-0 z-20">
         <div className="px-4 pt-3 pb-2 flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
             <button onClick={() => navigate('/')} className="text-primary shrink-0 -ml-2 w-11 h-11 -my-1.5 flex items-center justify-center" aria-label="回旅程列表">
