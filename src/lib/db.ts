@@ -4,6 +4,21 @@ import type { Trip, TripMember, Day, TripEvent } from '../types'
 
 // --- Helpers ---
 
+type Debounced = { (): void; cancel: () => void }
+
+/** Trailing debounce. One UPDATE touching N rows (reorder_events_rpc) arrives
+ *  as N postgres_changes pushes; undebounced, each one triggers its own full
+ *  refetch of the whole trip. */
+function debounce(fn: () => void, ms = 50): Debounced {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const run = (() => {
+    clearTimeout(timer)
+    timer = setTimeout(fn, ms)
+  }) as Debounced
+  run.cancel = () => clearTimeout(timer)
+  return run
+}
+
 export function dateRange(startDate: string, endDate: string): string[] {
   const [sy, sm, sd] = startDate.split('-').map(Number)
   const [ey, em, ed] = endDate.split('-').map(Number)
@@ -21,42 +36,6 @@ export function dateRange(startDate: string, endDate: string): string[] {
 }
 
 // --- Trip ---
-
-export function subscribeToTrip(
-  tripId: string,
-  onTrip: (trip: Trip | null) => void
-): () => void {
-  const fetch = async () => {
-    const { data, error } = await supabase
-      .from('trips')
-      .select('*, trip_members(user_email, display_name, avatar_url)')
-      .eq('id', tripId)
-      .single()
-    if (error || !data) { onTrip(null); return }
-    onTrip({
-      id: data.id,
-      name: data.name,
-      owner_email: data.owner_email ?? '',
-      start_date: data.start_date,
-      end_date: data.end_date,
-      notes: data.notes ?? '',
-      members: (data.trip_members as { user_email: string; display_name: string; avatar_url: string }[]).map(m => ({
-        email: m.user_email,
-        display_name: m.display_name,
-        avatar_url: m.avatar_url,
-      })),
-    })
-  }
-  fetch()
-
-  const channel = supabase
-    .channel(`trip-${tripId}`)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'trips', filter: `id=eq.${tripId}` }, fetch)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'trip_members', filter: `trip_id=eq.${tripId}` }, fetch)
-    .subscribe(reportChannelStatus)
-
-  return () => { supabase.removeChannel(channel) }
-}
 
 export async function createTrip(
   name: string,
@@ -232,28 +211,6 @@ export async function updateTripDates(
 
 // --- Days ---
 
-export function subscribeToDays(
-  tripId: string,
-  onDays: (days: Day[]) => void
-): () => void {
-  const fetch = async () => {
-    const { data } = await supabase
-      .from('days')
-      .select('*')
-      .eq('trip_id', tripId)
-      .order('sort_order')
-    onDays((data ?? []) as Day[])
-  }
-  fetch()
-
-  const channel = supabase
-    .channel(`days-${tripId}`)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'days', filter: `trip_id=eq.${tripId}` }, fetch)
-    .subscribe(reportChannelStatus)
-
-  return () => { supabase.removeChannel(channel) }
-}
-
 export async function updateDayLabel(dayId: string, label: string): Promise<WriteResult> {
   const { error } = await supabase.from('days').update({ label }).eq('id', dayId)
   return error ? { ok: false, error: error.message } : { ok: true }
@@ -264,33 +221,6 @@ export async function updateDayLabel(dayId: string, label: string): Promise<Writ
 /** Bucket key for events not yet scheduled into a day (migration 013).
  *  Not a uuid, so it can never collide with a real day id. */
 export const WISHLIST = 'wishlist'
-
-export function subscribeToTripEvents(
-  tripId: string,
-  onEvents: (byDay: Record<string, TripEvent[]>) => void
-): () => void {
-  const fetch = async () => {
-    const { data } = await supabase
-      .from('events')
-      .select('*')
-      .eq('trip_id', tripId)
-      .order('sort_order')
-
-    const byDay: Record<string, TripEvent[]> = {}
-    for (const row of (data ?? []) as (TripEvent & { day_id: string | null })[]) {
-      (byDay[row.day_id ?? WISHLIST] ??= []).push(row)
-    }
-    onEvents(byDay)
-  }
-  fetch()
-
-  const channel = supabase
-    .channel(`trip-events-${tripId}`)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'events', filter: `trip_id=eq.${tripId}` }, fetch)
-    .subscribe(reportChannelStatus)
-
-  return () => { supabase.removeChannel(channel) }
-}
 
 /** `dayId` null puts the event in the trip's wishlist (migration 013). */
 export async function createEvent(
@@ -351,6 +281,94 @@ export async function reorderEvents(dayId: string, orderedIds: string[]): Promis
   })
   if (error) return { ok: false, error: error.message }
   return data === true ? { ok: true } : { ok: false, error: 'REORDER_REJECTED' }
+}
+
+// --- Realtime ---
+
+export interface TripDataHandlers {
+  onTrip: (trip: Trip | null) => void
+  onDays: (days: Day[]) => void
+  onEvents: (byDay: Record<string, TripEvent[]>) => void
+}
+
+/**
+ * Everything the timeline reads, over a single channel.
+ *
+ * ponytail: one channel with four filters instead of three channels — they
+ * shared the one websocket anyway, and a per-table channel bought nothing
+ * except three subscribe() statuses fighting over one indicator.
+ *
+ * Each table refetches its own slice, debounced: a reorder is one UPDATE over
+ * N rows, which Postgres replicates as N separate change events.
+ */
+export function subscribeToTripData(tripId: string, handlers: TripDataHandlers): () => void {
+  const fetchTrip = async () => {
+    const { data, error } = await supabase
+      .from('trips')
+      .select('*, trip_members(user_email, display_name, avatar_url)')
+      .eq('id', tripId)
+      .single()
+    if (error || !data) { handlers.onTrip(null); return }
+    handlers.onTrip({
+      id: data.id,
+      name: data.name,
+      owner_email: data.owner_email ?? '',
+      start_date: data.start_date,
+      end_date: data.end_date,
+      notes: data.notes ?? '',
+      members: (data.trip_members as { user_email: string; display_name: string; avatar_url: string }[]).map(m => ({
+        email: m.user_email,
+        display_name: m.display_name,
+        avatar_url: m.avatar_url,
+      })),
+    })
+  }
+
+  const fetchDays = async () => {
+    const { data } = await supabase
+      .from('days')
+      .select('*')
+      .eq('trip_id', tripId)
+      .order('sort_order')
+    handlers.onDays((data ?? []) as Day[])
+  }
+
+  const fetchEvents = async () => {
+    const { data } = await supabase
+      .from('events')
+      .select('*')
+      .eq('trip_id', tripId)
+      .order('sort_order')
+
+    const byDay: Record<string, TripEvent[]> = {}
+    for (const row of (data ?? []) as (TripEvent & { day_id: string | null })[]) {
+      (byDay[row.day_id ?? WISHLIST] ??= []).push(row)
+    }
+    handlers.onEvents(byDay)
+  }
+
+  fetchTrip()
+  fetchDays()
+  fetchEvents()
+
+  const refetchTrip = debounce(fetchTrip)
+  const refetchDays = debounce(fetchDays)
+  const refetchEvents = debounce(fetchEvents)
+
+  const channel = supabase
+    .channel(`trip-${tripId}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'trips', filter: `id=eq.${tripId}` }, refetchTrip)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'trip_members', filter: `trip_id=eq.${tripId}` }, refetchTrip)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'days', filter: `trip_id=eq.${tripId}` }, refetchDays)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'events', filter: `trip_id=eq.${tripId}` }, refetchEvents)
+    .subscribe(reportChannelStatus)
+
+  return () => {
+    refetchTrip.cancel()
+    refetchDays.cancel()
+    refetchEvents.cancel()
+    supabase.removeChannel(channel)
+  }
 }
 
 // Re-export TripMember so callers don't need to import from types directly

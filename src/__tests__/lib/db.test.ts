@@ -39,7 +39,7 @@ import {
   updateTripDates,
   removeMember,
   updateMyDisplayName,
-  subscribeToTripEvents,
+  subscribeToTripData,
 } from '../../lib/db'
 
 beforeEach(() => {
@@ -464,33 +464,109 @@ describe('write results', () => {
   })
 })
 
-describe('subscribeToTripEvents', () => {
-  it('fetches every event for the trip and groups them by day', async () => {
-    const order = vi.fn().mockResolvedValue({
-      data: [
-        { id: 'e1', day_id: 'd1', title: 'A', sort_order: 0 },
-        { id: 'e2', day_id: 'd2', title: 'B', sort_order: 0 },
-        { id: 'e3', day_id: 'd1', title: 'C', sort_order: 1 },
-      ],
+describe('subscribeToTripData', () => {
+  const noop = { onTrip: () => {}, onDays: () => {}, onEvents: () => {} }
+
+  /** Wires up the three fetch shapes and captures the channel's own handlers,
+   *  so a realtime push can be replayed without a websocket. */
+  function setup(eventRows: unknown[] = []) {
+    const eventsOrder = vi.fn().mockResolvedValue({ data: eventRows })
+    const daysOrder = vi.fn().mockResolvedValue({ data: [] })
+    const single = vi.fn().mockResolvedValue({ data: null, error: { message: 'not a member' } })
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'trips') return { select: () => ({ eq: () => ({ single }) }) }
+      if (table === 'days') return { select: () => ({ eq: () => ({ order: daysOrder }) }) }
+      if (table === 'events') return { select: () => ({ eq: () => ({ order: eventsOrder }) }) }
+      return {}
     })
-    const eq = vi.fn(() => ({ order }))
-    mockFrom.mockReturnValue({ select: vi.fn(() => ({ eq })) })
+
+    const pushes: Record<string, () => void> = {}
+    mockChannel.mockImplementation(() => {
+      const channel = {
+        on: (_event: string, config: { table: string }, handler: () => void) => {
+          pushes[config.table] = handler
+          return channel
+        },
+        subscribe: vi.fn(() => channel),
+      }
+      return channel
+    })
+
+    return { pushes, eventsOrder, daysOrder, single }
+  }
+
+  const settle = () => new Promise((r) => setTimeout(r, 120))
+
+  it('groups every event of the trip by day', async () => {
+    setup([
+      { id: 'e1', day_id: 'd1', title: 'A', sort_order: 0 },
+      { id: 'e2', day_id: 'd2', title: 'B', sort_order: 0 },
+      { id: 'e3', day_id: 'd1', title: 'C', sort_order: 1 },
+    ])
 
     const received: Record<string, unknown[]>[] = []
-    subscribeToTripEvents('t1', (byDay) => received.push(byDay))
+    subscribeToTripData('t1', { ...noop, onEvents: (byDay) => received.push(byDay) })
     await vi.waitFor(() => expect(received).toHaveLength(1))
 
-    expect(eq).toHaveBeenCalledWith('trip_id', 't1')
     expect(Object.keys(received[0]).sort()).toEqual(['d1', 'd2'])
     expect(received[0].d1).toHaveLength(2)
     expect(received[0].d2).toHaveLength(1)
   })
 
-  it('opens exactly one channel', () => {
-    const order = vi.fn().mockResolvedValue({ data: [] })
-    mockFrom.mockReturnValue({ select: vi.fn(() => ({ eq: vi.fn(() => ({ order })) })) })
+  it('puts events with no day in the wishlist bucket', async () => {
+    setup([{ id: 'e1', day_id: null, title: 'A', sort_order: 0 }])
+
+    const received: Record<string, unknown[]>[] = []
+    subscribeToTripData('t1', { ...noop, onEvents: (byDay) => received.push(byDay) })
+    await vi.waitFor(() => expect(received).toHaveLength(1))
+
+    expect(received[0].wishlist).toHaveLength(1)
+  })
+
+  it('opens one channel for the whole trip, not one per table', () => {
+    setup()
     mockChannel.mockClear()
-    subscribeToTripEvents('t1', () => {})
+    subscribeToTripData('t1', noop)
     expect(mockChannel).toHaveBeenCalledOnce()
+  })
+
+  // This is the point of debouncing: reorder_events_rpc is a single UPDATE
+  // over N rows, which Postgres replicates as N separate change events.
+  it('coalesces a burst of pushes into one refetch', async () => {
+    const { pushes, eventsOrder } = setup()
+    const unsubscribe = subscribeToTripData('t1', noop)
+    await vi.waitFor(() => expect(eventsOrder).toHaveBeenCalledTimes(1))
+
+    for (let i = 0; i < 5; i++) pushes.events()
+    await settle()
+
+    expect(eventsOrder).toHaveBeenCalledTimes(2)
+    unsubscribe()
+  })
+
+  it('refetches only the table that changed', async () => {
+    const { pushes, eventsOrder, daysOrder } = setup()
+    const unsubscribe = subscribeToTripData('t1', noop)
+    await vi.waitFor(() => expect(eventsOrder).toHaveBeenCalledTimes(1))
+
+    pushes.events()
+    await settle()
+
+    expect(eventsOrder).toHaveBeenCalledTimes(2)
+    expect(daysOrder).toHaveBeenCalledTimes(1)
+    unsubscribe()
+  })
+
+  it('drops a pending refetch when the caller unsubscribes', async () => {
+    const { pushes, eventsOrder } = setup()
+    const unsubscribe = subscribeToTripData('t1', noop)
+    await vi.waitFor(() => expect(eventsOrder).toHaveBeenCalledTimes(1))
+
+    pushes.events()
+    unsubscribe()
+    await settle()
+
+    expect(eventsOrder).toHaveBeenCalledTimes(1)
   })
 })
