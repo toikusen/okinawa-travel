@@ -116,9 +116,9 @@ function SortableCard({
         {...listeners}
         role="button"
         aria-label="拖曳排序"
-        className="absolute left-0 top-0 bottom-0 w-8 z-10 flex items-center justify-center touch-none cursor-grab active:cursor-grabbing"
+        className="absolute left-0 top-0 bottom-0 w-8 z-10 flex items-start justify-center pt-3 touch-none cursor-grab active:cursor-grabbing"
       >
-        <span className="w-5 h-7 rounded-[5px] bg-bg flex items-center justify-center text-muted">
+        <span className="w-5 h-8 rounded-[5px] bg-bg flex items-center justify-center text-muted">
           <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor" aria-hidden="true">
             <circle cx="3" cy="3" r="1.4" /><circle cx="8" cy="3" r="1.4" />
             <circle cx="3" cy="8" r="1.4" /><circle cx="8" cy="8" r="1.4" />
@@ -127,9 +127,9 @@ function SortableCard({
         </span>
       </span>
       {event.type === 'fork' ? (
-        <ForkCard event={event} onClick={onOpen} />
+        <ForkCard event={event} onClick={onOpen} inset />
       ) : (
-        <EventCard event={event} onClick={onOpen} />
+        <EventCard event={event} onClick={onOpen} inset />
       )}
     </div>
   )

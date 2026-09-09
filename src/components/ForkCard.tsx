@@ -5,6 +5,8 @@ import { Icon } from './Icon'
 interface Props {
   event: TripEvent
   onClick: (event: TripEvent) => void
+  /** See EventCard — room for the timeline's drag handle. */
+  inset?: boolean
 }
 
 const GROUP_STYLES = [
@@ -15,8 +17,9 @@ const GROUP_STYLES = [
 ]
 const NAME_COLORS = ['text-primary', 'text-text-secondary', 'text-identity-2', 'text-identity-5']
 
-export function ForkCard({ event, onClick }: Props) {
+export function ForkCard({ event, onClick, inset = false }: Props) {
   const items: ForkItem[] = event.fork_items ?? []
+  const pl = inset ? 'pl-8' : 'pl-3'
   const time =
     event.time_start && event.time_end
       ? `${event.time_start}–${event.time_end}`
@@ -35,14 +38,14 @@ export function ForkCard({ event, onClick }: Props) {
       }}
       className="w-full bg-white rounded-[12px] shadow-card border-l-[3px] border-l-primary text-left active:opacity-70 transition-opacity overflow-hidden"
     >
-      <div className="pl-8 pr-4 pt-3 pb-2 flex items-center gap-1.5 text-primary">
+      <div className={`${pl} pr-4 pt-3 pb-2 flex items-center gap-1.5 text-primary`}>
         <Icon name="users" size={13} />
         <p className="text-[11.5px] font-semibold tracking-wide">
           分頭行動
           {time && <span className="font-mono tabular-nums">{` · ${time}`}</span>}
         </p>
       </div>
-      <div data-testid="fork-groups" className="flex flex-col gap-2 pl-8 pr-3 pb-3">
+      <div data-testid="fork-groups" className={`flex flex-col gap-2 ${pl} pr-3 pb-3`}>
         {items.map((item, i) => (
           <div
             key={i}
@@ -61,7 +64,7 @@ export function ForkCard({ event, onClick }: Props) {
                   rel="noopener noreferrer"
                   aria-label={`導航到 ${item.location}`}
                   onClick={(e) => e.stopPropagation()}
-                  className="shrink-0 -my-1.5 w-6 h-6 flex items-center justify-center text-primary"
+                  className="shrink-0 -my-1.5 -ml-1 w-6 h-6 flex items-center justify-center text-primary"
                 >
                   <Icon name="navigation" size={13} />
                 </a>
