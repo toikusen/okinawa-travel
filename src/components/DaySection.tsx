@@ -116,7 +116,12 @@ function SortableCard({
         {...listeners}
         role="button"
         aria-label="拖曳排序"
-        className="absolute left-0 top-0 bottom-0 w-8 z-10 flex items-center justify-center touch-none cursor-grab active:cursor-grabbing"
+        // ponytail: the grip is centred on the card's first icon, whose y differs
+        // per card type — event icon sits at 30px (py-3 + mt-0.5 + h-8/2),
+        // the fork header icon at ~21px (pt-3 + 17px row/2). Grip is h-7, so pt = y - 14.
+        className={`absolute left-0 top-0 bottom-0 w-8 z-10 flex items-start justify-center touch-none cursor-grab active:cursor-grabbing ${
+          event.type === 'fork' ? 'pt-[7px]' : 'pt-4'
+        }`}
       >
         <span className="w-5 h-7 rounded-[5px] bg-bg flex items-center justify-center text-muted">
           <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor" aria-hidden="true">
