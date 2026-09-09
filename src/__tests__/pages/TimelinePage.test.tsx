@@ -49,6 +49,20 @@ describe('TimelinePage', () => {
     expect(screen.getByTestId('day-section')).toBeInTheDocument()
   })
 
+  it('keeps 重要資訊 off the first screen', () => {
+    mockUseTrip.mockReturnValue({
+      trip: { id: 't1', name: '沖繩 2026', owner_email: 'sei@test.com', members: [], start_date: '2026-08-01', end_date: '2026-08-02', notes: 'BR116 07:35' },
+      days: [{ id: 'd1', date: '2026-08-01', label: '', sort_order: 0 }],
+      eventsByDay: {},
+      loading: false,
+    })
+
+    renderAt('/trips/t1')
+
+    expect(screen.queryByText('重要資訊')).not.toBeInTheDocument()
+    expect(screen.queryByText('BR116 07:35')).not.toBeInTheDocument()
+  })
+
   it('redirects to / when the trip fails to load (not a member)', () => {
     mockUseTrip.mockReturnValue({ trip: null, days: [], eventsByDay: {}, loading: false })
 

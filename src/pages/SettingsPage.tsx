@@ -7,6 +7,7 @@ import { updateTrip, updateTripDates, deleteTrip, removeMember } from '../lib/db
 import { toast } from '../lib/toast'
 import { itineraryText, shareItinerary } from '../lib/share'
 import { MembersSection } from '../components/MembersSection'
+import { TripNotesSection } from '../components/TripNotesSection'
 import { SavedBadge } from '../components/SavedBadge'
 import { ConfirmSheet } from '../components/ConfirmSheet'
 
@@ -147,6 +148,8 @@ export function SettingsPage() {
           </div>
           {dateError && <p className="text-xs text-danger mt-2">{dateError}</p>}
         </section>
+
+        {trip && <TripNotesSection trip={trip} />}
 
         <section className="bg-white rounded-[12px] p-4 border border-border">
           <p className="text-xs font-semibold text-text-label mb-3">分享行程</p>

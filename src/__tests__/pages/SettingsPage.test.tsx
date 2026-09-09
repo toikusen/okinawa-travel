@@ -36,6 +36,15 @@ function renderPage() {
   )
 }
 
+describe('SettingsPage', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('carries 重要資訊 as a settings section, off the timeline', () => {
+    renderPage()
+    expect(screen.getByLabelText('重要資訊')).toBeInTheDocument()
+  })
+})
+
 describe('SettingsPage delete flow', () => {
   beforeEach(() => vi.clearAllMocks())
 

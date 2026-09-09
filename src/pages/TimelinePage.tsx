@@ -13,7 +13,6 @@ import { WishlistSection } from '../components/WishlistSection'
 import { WISHLIST } from '../lib/db'
 import { InstallPrompt } from '../components/InstallPrompt'
 import { InviteCard } from '../components/InviteCard'
-import { TripNotesCard } from '../components/TripNotesCard'
 
 export function TimelinePage() {
   const { user } = useAuth()
@@ -121,8 +120,6 @@ export function TimelinePage() {
       </header>
 
       <main className="flex-1 overflow-y-auto px-4 py-4">
-        {/* 航班、訂房代號、緊急聯絡:旅途中最常翻的一塊,放在最上面 */}
-        <TripNotesCard trip={trip} />
         <InviteCard trip={trip} />
         <div className="flex flex-col gap-6">
           {days.map((day) => (
